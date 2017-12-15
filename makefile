@@ -1,5 +1,5 @@
 all:
-	g++ server.cpp -o server
-	g++ client.cpp -o client
+	g++ server.cpp response.h -o server
+	g++ client.cpp request.h response.h -o client
 clean:
 	rm -f *~client server
