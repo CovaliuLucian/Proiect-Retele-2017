@@ -1,0 +1,7 @@
+system ?
+popen ?
+execl("/bin/sh", "sh", "-c", command, (char *) NULL); ?
+
+
+chestii interactive - vim,nano,man,etc
+input wait - "cat "
