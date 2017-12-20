@@ -81,10 +81,12 @@ int main(int argc, char *argv[])
      (apel blocant pina cind serverul raspunde) */
   
   int sizeRes;
+  Response resp;
 
   if (read(sd, &sizeRes, sizeof sizeRes) < 0)
   {
-    perror("[client]Eroare la read() de la server.\n");
+    resp.setMessage("Eroare la read() de la server.\n");
+    resp.setCode(201);
     return errno;
   }
 

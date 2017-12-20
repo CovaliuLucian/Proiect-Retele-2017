@@ -21,4 +21,8 @@ class Response
     {
         message = m;
     }
+    void setMessage(const char* m)
+    {
+        message = string(m);
+    }
 };
