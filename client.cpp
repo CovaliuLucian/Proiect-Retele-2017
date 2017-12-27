@@ -18,11 +18,28 @@
 #include "request.h"
 #include "response.h"
 
+#include <iostream>
+
+using namespace std;
+
 /* codul de eroare returnat de anumite apeluri */
 extern int errno;
 
 /* portul de conectare la server*/
 int port;
+
+int sendRequest(int sd, Request req)
+{
+  int status;
+  char* serialized = (char*)req.getRequest().c_str();
+  int len = (int)req.getRequest().size();
+  status = write(sd,serialized,len);
+  if(status < 0)
+  {
+    // error
+  }
+  return status;
+}
 
 int main(int argc, char *argv[])
 {
@@ -71,7 +88,7 @@ int main(int argc, char *argv[])
   Request r = Request(msg);
 
   /* trimiterea mesajului la server */
-  if (write(sd, &r, sizeof r) <= 0)
+  if (sendRequest(sd,r) <= 0)
   {
     perror("[client]Eroare la write() spre server.\n");
     return errno;
@@ -95,8 +112,23 @@ int main(int argc, char *argv[])
     return errno;
   }
   /* afisam mesajul primit */
-  printf("[client]Mesajul primit este: %s\n", res.getMessage());
+  cout << "[client]Mesajul primit este: %s\n" <<  res.getMessage();
 
   /* inchidem conexiunea, am terminat */
   close(sd);
+}
+
+Response test()
+{
+  int sd,resSize;
+
+  char* responseString;
+  
+  Response res;
+  if (read(sd, responseString, resSize) < 0)
+  {
+    res.setMessage("Eroare la read() de la server.\n");
+    res.setCode(201);
+    return res;
+  }
 }

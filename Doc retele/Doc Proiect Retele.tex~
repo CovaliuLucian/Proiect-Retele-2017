@@ -84,7 +84,7 @@ Codurile sunt numere de trei cifre, codul pentru succes este 100, codurile pentr
 Exemplu de eroare la citirea raspunsului de la server:
 
 \begin{figure}
-\includegraphics[width=0.8\linewidth]{exerr.png}
+\includegraphics[width=\linewidth]{exerr.png}
 \end{figure}
 
 %

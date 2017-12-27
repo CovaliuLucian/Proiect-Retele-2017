@@ -22,11 +22,25 @@
 #include "response.h"
 #include "request.h"
 
+#include <openssl/bio.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/sha.h>
+
+#include <iostream>
+
+using namespace std;
+
 /* portul folosit */
 
 #define PORT 2728
 
 int sayHello(int fd);
+
+Request readRequest(int sd)
+{
+  // read x2
+}
 
 extern int errno; /* eroarea returnata de unele apeluri */
 
@@ -175,7 +189,7 @@ int sayHello(int fd)
     return 0;
   }
 
-  printf("[server]Mesajul a fost receptionat...%s\n", r.getRequest());
+  cout << "[server]Mesajul a fost receptionat...%s\n" << r.getRequest();
 
   /*pregatim mesajul de raspuns */
   //bzero(msgrasp,100);
@@ -194,7 +208,7 @@ int sayHello(int fd)
 
   res.setMessage(string(msg));
 
-  printf("[server]Trimitem mesajul inapoi...%s\n", res.getMessage());
+  cout << "[server]Trimitem mesajul inapoi...%s\n" << res.getMessage();
 
   int sizeRes = sizeof res;
 
