@@ -18,6 +18,7 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "response.h"
 #include "request.h"
@@ -39,7 +40,35 @@ int sayHello(int fd);
 
 Request readRequest(int sd)
 {
-  // read x2
+  char serialized [200];
+  int bytes = read(sd, serialized, sizeof(serialized));
+  if (bytes < 0)
+  {
+    perror("Eroare la read() de la client.\n");
+    return 0;
+  }
+  return Request(serialized);
+}
+
+int sendResponse(int sd, Response res)
+{
+  char code[4];
+  sprintf(code,"%i",res.getCode());
+  char* serialized = strcat(code,res.getMessage().c_str());
+  int sizeRes = (int)strlen(serialized);
+
+  if (write(sd, &sizeRes, sizeof(int)) < 0)
+  {
+    perror("[server] Eroare la write() catre client.\n");
+    return 0;
+  }
+
+  if (write(sd, serialized, sizeRes) < 0)
+  {
+    perror("[server] Eroare la write() catre client.\n");
+    return 0;
+  }
+  return 1;
 }
 
 extern int errno; /* eroarea returnata de unele apeluri */
@@ -179,50 +208,35 @@ int main()
 int sayHello(int fd)
 {
   char buffer[100]; /* mesajul */
-  int bytes;        /* numarul de octeti cititi/scrisi */
   Request r;        //mesajul primit de la client
   Response res;     //mesaj de raspuns pentru client
-  bytes = read(fd, &r, sizeof(buffer));
-  if (bytes < 0)
-  {
-    perror("Eroare la read() de la client.\n");
-    return 0;
-  }
+  
+  r = readRequest(fd);
 
-  cout << "[server]Mesajul a fost receptionat...%s\n" << r.getRequest();
+  cout << "[server]Mesajul a fost receptionat..." << r.getRequest() << endl;
 
   /*pregatim mesajul de raspuns */
   //bzero(msgrasp,100);
 
-  FILE *fp;
-  char path[1000];
-  char msg[1000];
-  bzero(msg,1000);
-  fp = popen(r.getRequest().c_str(), "r");
-  while (fgets(path, sizeof(path), fp) != NULL)
-  {
-    strcat(msg, path);
-  }
+  // FILE *fp;
+  // char path[1000];
+  // char msg[1000];
+  // bzero(msg,1000);
+  // fp = popen(r.getRequest().c_str(), "r");
+  // while (fgets(path, sizeof(path), fp) != NULL)
+  // {
+  //   strcat(msg, path);
+  // }
 
-  pclose(fp);
+  // pclose(fp);
 
-  res.setMessage(string(msg));
+  // res.setMessage(string(msg));
 
-  cout << "[server]Trimitem mesajul inapoi...%s\n" << res.getMessage();
+  res.setMessage("pls work");
 
-  int sizeRes = sizeof res;
+  cout << "[server]Trimitem mesajul inapoi..." << res.getMessage() << endl;
 
-  if (write(fd, &sizeRes, sizeof(int)) < 0)
-  {
-    perror("[server] Eroare la write() catre client.\n");
-    return 0;
-  }
+  sendResponse(fd,res);
 
-  if (write(fd, &res, sizeRes) < 0)
-  {
-    perror("[server] Eroare la write() catre client.\n");
-    return 0;
-  }
-
-  return bytes;
+  return 1;
 }

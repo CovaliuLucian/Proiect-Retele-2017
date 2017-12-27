@@ -41,6 +41,26 @@ int sendRequest(int sd, Request req)
   return status;
 }
 
+Response readResponse(int sd)
+{
+  int sizeRes;
+  Response resp;
+  char serialized[200];
+
+  if (read(sd, &sizeRes, sizeof sizeRes) < 0)
+  {
+    resp.setMessage("Eroare la read() de la server.\n");
+    resp.setCode(201);
+  }
+
+  if (read(sd, serialized, sizeRes) < 0)
+  {
+    resp.setMessage("Eroare la read() de la server.\n");
+    resp.setCode(202);
+  }
+  return Response(serialized);
+}
+
 int main(int argc, char *argv[])
 {
   int sd;                    // descriptorul de socket
@@ -87,6 +107,9 @@ int main(int argc, char *argv[])
 
   Request r = Request(msg);
 
+  cout << r.getRequest();
+  cout.flush();
+
   /* trimiterea mesajului la server */
   if (sendRequest(sd,r) <= 0)
   {
@@ -97,24 +120,9 @@ int main(int argc, char *argv[])
   /* citirea raspunsului dat de server 
      (apel blocant pina cind serverul raspunde) */
   
-  int sizeRes;
-  Response resp;
-
-  if (read(sd, &sizeRes, sizeof sizeRes) < 0)
-  {
-    resp.setMessage("Eroare la read() de la server.\n");
-    resp.setCode(201);
-    return errno;
-  }
-
-  Response res;
-  if (read(sd, &res, 100) < 0)
-  {
-    perror("[client]Eroare la read() de la server.\n");
-    return errno;
-  }
+  Response res = readResponse(sd);
   /* afisam mesajul primit */
-  cout << "[client]Mesajul primit este: %s\n" <<  res.getMessage();
+  cout << "[client]Mesajul primit este: \n" <<  res.getMessage() << endl;
 
   /* inchidem conexiunea, am terminat */
   close(sd);

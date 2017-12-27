@@ -7,8 +7,18 @@ class Response
   private:
     int code;
     string message;
+    
 
   public:
+    Response()
+    {
+        code = 0;
+    }
+    Response(char* msg)
+    {
+        code = 0;
+        setMessage(string(msg));
+    }
     string getMessage()
     {
         return message;
@@ -17,11 +27,11 @@ class Response
     {
         code = c;
     }
-    void setMessage(string m)
+    int getCode()
     {
-        message = m;
+        return code;
     }
-    void setMessage(const char* m)
+    void setMessage(string m)
     {
         message = string(m);
     }
