@@ -18,7 +18,6 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <stdlib.h>
-#include <stdio.h>
 
 #include "response.h"
 #include "request.h"
@@ -55,28 +54,6 @@ Request readRequest(int sd)
   }
   serialized[length]=0;
   return Request(serialized);
-}
-
-int sendResponse(int sd, Response res)
-{
-  char code[4];
-  sprintf(code,"%i",res.getCode());
-  string serializedString = string(code) + res.getMessage();
-  const char* serialized = serializedString.c_str();
-  int sizeRes = (int)strlen(serialized);
-
-  if (write(sd, &sizeRes, sizeof(int)) < 0)
-  {
-    perror("[server] Eroare la write() catre client.\n");
-    return 0;
-  }
-
-  if (write(sd, serialized, sizeRes) < 0)
-  {
-    perror("[server] Eroare la write() catre client.\n");
-    return 0;
-  }
-  return 1;
 }
 
 extern int errno; /* eroarea returnata de unele apeluri */
@@ -243,7 +220,7 @@ int sayHello(int fd)
 
   cout << "[server]Trimitem mesajul inapoi..." << res.getMessage() << endl;
 
-  sendResponse(fd,res);
+  res.send(fd);
 
   return 1;
 }

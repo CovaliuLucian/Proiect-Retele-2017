@@ -29,26 +29,6 @@ extern int errno;
 /* portul de conectare la server*/
 int port;
 
-int sendRequest(int sd, Request req)
-{
-  int status;
-  char* serialized = (char*)req.getRequest().c_str();
-  int len = (int)req.getRequest().size();
-
-  status = write(sd,&len,sizeof len);
-  if(status < 0)
-  {
-    // error
-  }
-
-  status = write(sd,serialized,len);
-  if(status < 0)
-  {
-    // error
-  }
-  return status;
-}
-
 Response readResponse(int sd)
 {
   int sizeRes;
@@ -125,7 +105,7 @@ int main(int argc, char *argv[])
   cout.flush();
 
   /* trimiterea mesajului la server */
-  if (sendRequest(sd,r) <= 0)
+  if (r.send(sd) <= 0)
   {
     perror("[client]Eroare la write() spre server.\n");
     return errno;
