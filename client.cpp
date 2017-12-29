@@ -33,7 +33,7 @@ Response readResponse(int sd)
 {
   int sizeRes;
   Response resp;
-  char serialized[200];
+  char serialized[10000];
 
   if (read(sd, &sizeRes, sizeof sizeRes) < 0)
   {

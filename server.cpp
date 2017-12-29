@@ -21,6 +21,8 @@
 
 #include "response.h"
 #include "request.h"
+#include "parsing.h"
+#include "token.h"
 
 #include <openssl/bio.h>
 #include <openssl/ssl.h>
@@ -28,6 +30,8 @@
 #include <openssl/sha.h>
 
 #include <iostream>
+#include <queue>
+#include <string>
 
 using namespace std;
 
@@ -199,6 +203,14 @@ int sayHello(int fd)
   r = readRequest(fd);
 
   cout << "[server]Mesajul a fost receptionat..." << r.getRequest() << endl;
+
+  queue<Token> test = Parser::ParsePrep(r.getRequest());
+
+  while(!test.empty())
+  {
+    cout << test.front().command << "\n";
+    test.pop();
+  }
 
 
   FILE *fp;
