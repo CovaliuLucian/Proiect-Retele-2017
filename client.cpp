@@ -19,6 +19,7 @@
 #include "response.h"
 
 #include <iostream>
+#include <string>
 
 using namespace std;
 
@@ -33,6 +34,13 @@ int sendRequest(int sd, Request req)
   int status;
   char* serialized = (char*)req.getRequest().c_str();
   int len = (int)req.getRequest().size();
+
+  status = write(sd,&len,sizeof len);
+  if(status < 0)
+  {
+    // error
+  }
+
   status = write(sd,serialized,len);
   if(status < 0)
   {
@@ -58,7 +66,13 @@ Response readResponse(int sd)
     resp.setMessage("Eroare la read() de la server.\n");
     resp.setCode(202);
   }
-  return Response(serialized);
+  serialized[sizeRes] = 0;
+  string serializedString = string(serialized);
+  Response toReturn;
+  toReturn.setCode(atoi(serializedString.substr(0,3).c_str()));
+  toReturn.setMessage(serializedString.substr(3));
+  
+  return toReturn;
 }
 
 int main(int argc, char *argv[])

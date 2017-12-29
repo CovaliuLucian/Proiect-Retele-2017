@@ -41,12 +41,19 @@ int sayHello(int fd);
 Request readRequest(int sd)
 {
   char serialized [200];
-  int bytes = read(sd, serialized, sizeof(serialized));
-  if (bytes < 0)
+  int length;
+  int status = read(sd, &length, sizeof length);
+  if(status < 0)
+  {
+    //error
+  }
+  int bytes = read(sd, serialized, length);
+  if(length != bytes || bytes < 0)
   {
     perror("Eroare la read() de la client.\n");
     return 0;
   }
+  serialized[length]=0;
   return Request(serialized);
 }
 
@@ -54,7 +61,8 @@ int sendResponse(int sd, Response res)
 {
   char code[4];
   sprintf(code,"%i",res.getCode());
-  char* serialized = strcat(code,res.getMessage().c_str());
+  string serializedString = string(code) + res.getMessage();
+  const char* serialized = serializedString.c_str();
   int sizeRes = (int)strlen(serialized);
 
   if (write(sd, &sizeRes, sizeof(int)) < 0)
@@ -215,24 +223,23 @@ int sayHello(int fd)
 
   cout << "[server]Mesajul a fost receptionat..." << r.getRequest() << endl;
 
-  /*pregatim mesajul de raspuns */
-  //bzero(msgrasp,100);
 
-  // FILE *fp;
-  // char path[1000];
-  // char msg[1000];
-  // bzero(msg,1000);
-  // fp = popen(r.getRequest().c_str(), "r");
-  // while (fgets(path, sizeof(path), fp) != NULL)
-  // {
-  //   strcat(msg, path);
-  // }
+  FILE *fp;
+  char path[1000];
+  char msg[1000];
+  bzero(msg,1000);
+  fp = popen(r.getRequest().c_str(), "r");
+  while (fgets(path, sizeof(path), fp) != NULL)
+  {
+    strcat(msg, path);
+  }
 
-  // pclose(fp);
+  pclose(fp);
 
-  // res.setMessage(string(msg));
+  res.setMessage(string(msg));
 
-  res.setMessage("pls work");
+  //res.setMessage("pls work");
+  res.setCode(100);
 
   cout << "[server]Trimitem mesajul inapoi..." << res.getMessage() << endl;
 

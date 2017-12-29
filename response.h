@@ -12,11 +12,11 @@ class Response
   public:
     Response()
     {
-        code = 0;
+        setCode(999);
     }
     Response(char* msg)
     {
-        code = 0;
+        setCode(999);
         setMessage(string(msg));
     }
     string getMessage()
@@ -25,6 +25,8 @@ class Response
     }
     void setCode(int c)
     {
+        if(code < 100 || code > 999)
+            code = 999;
         code = c;
     }
     int getCode()
