@@ -1,6 +1,13 @@
 #include <string>
 #include <queue>
 
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "token.h"
 #include "operator.h"
 #include "operand.h"
@@ -41,7 +48,7 @@ class Parser
 
             if (op == "&&" || op == "||" || op == "2>")
             {
-                toReturn.push(Operand(Trim(input.substr(last, i - last)), op == "2>" ? 1 : 0));
+                toReturn.push(*new Operand(Trim(input.substr(last, i - last)), op == "2>" ? 1 : 0));
                 toReturn.push(Operator(op));
                 i++;
                 last = i + 1;
@@ -51,7 +58,7 @@ class Parser
                 op = input.substr(i, 1);
                 if (op == "|" || op == "&" || op == ";" || op == "(" || op == ")" || op == ">" || op == "<")
                 {
-                    toReturn.push(Operand(Trim(input.substr(last, i - last)), op == ">" || op == "<" ? 1 : 0));
+                    toReturn.push(*new Operand(Trim(input.substr(last, i - last)), op == ">" || op == "<" ? 1 : 0));
                     toReturn.push(Operator(op));
                     last = i + 1;
                 }
@@ -59,7 +66,7 @@ class Parser
 
             i++;
         }
-        toReturn.push(Operand(Trim(input.substr(last, i - last))));
+        toReturn.push(*new Operand(Trim(input.substr(last, i - last))));
 
         return toReturn;
     }
@@ -154,7 +161,7 @@ class Parser
     Tree static GenerateTree(queue<Token> input)
     {
         queue<Tree> Stack = queue<Tree>();
-        Tree newOp;
+        Tree *last;
         while (!input.empty())
         {
             Token current = input.front();
@@ -162,26 +169,71 @@ class Parser
             {
                 if (Stack.size() < 2)
                     throw "Invalid expression around " + current.command;
-                Tree op2 = Stack.front();
+                Tree *op2 = &Stack.front();
                 Stack.pop();
-                Tree op1 = Stack.front();
+                Tree *op1 = &Stack.front();
                 Stack.pop();
-                newOp = Tree(current,op1,op2);
-                Stack.push(newOp);
+                Tree *newOp = new Tree(current, op1, op2);
+                Stack.push(*newOp);
+
+                last = newOp;
             }
-            if(current.getType() == "Operand")
+            if (current.getType() == "Operand")
             {
-                newOp = Tree (current);
-                Stack.push(newOp);
+                Tree *newOp = new Tree(current);
+                Stack.push(*newOp);
+
+                last = newOp;
             }
             input.pop();
         }
 
-        return newOp;
+        return *last;
     }
 
-    void Execute(Tree input)
+    string static Execute(Tree input)
     {
-        //
+        int child = fork();
+        int sockets[2];
+
+        if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) < 0)
+        {
+            throw "Socketpair error";
+        }
+
+        if (child < 0)
+        {
+            throw "Fork error";
+        }
+        if (child) // parent
+        {
+            close(sockets[0]);
+
+            wait(0);
+
+            char output[1000];
+            int len = read(sockets[1], output, 1000);
+
+            if (len < 0)
+                throw "?";
+
+            output[len] = 0;
+
+            return string(output);
+
+            close(sockets[1]);
+        }
+        else
+        {
+            close(sockets[1]);
+
+            dup2(0, sockets[0]);
+            dup2(1, sockets[0]);
+
+            execl("/bin/sh", "sh", "-c", input.left->token.command.c_str(), NULL);
+
+            close(sockets[0]);
+            exit(0);
+        }
     }
 };

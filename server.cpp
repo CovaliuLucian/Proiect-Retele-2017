@@ -23,6 +23,7 @@
 #include "request.h"
 #include "parsing.h"
 #include "token.h"
+#include "tree.h"
 
 #include <openssl/bio.h>
 #include <openssl/ssl.h>
@@ -216,27 +217,33 @@ int sayHello(int fd)
     test.pop();
   }
 
-  while (!test2.empty())
-  {
-    cout << test2.front().command << "\n";
-    test2.pop();
-  }
+  // while (!test2.empty())
+  // {
+  //   cout << test2.front().command << "\n";
+  //   test2.pop();
+  // }
 
-  FILE *fp;
-  char path[1000];
-  char msg[1000];
-  bzero(msg, 1000);
-  fp = popen(r.getRequest().c_str(), "r");
-  while (fgets(path, sizeof(path), fp) != NULL)
-  {
-    strcat(msg, path);
-  }
+  Tree test3 = Parser::GenerateTree(test2);
 
-  pclose(fp);
+  cout << Parser::Execute(test3);
 
-  res.setMessage(string(msg));
+  
+  // FILE *fp;
+  // char path[1000];
+  // char msg[1000];
+  // bzero(msg, 1000);
+  // fp = popen(r.getRequest().c_str(), "r");
+  // while (fgets(path, sizeof(path), fp) != NULL)
+  // {
+  //   strcat(msg, path);
+  // }
 
-  //res.setMessage("pls work");
+  // pclose(fp);
+
+  // res.setMessage(string(msg));
+  
+
+  res.setMessage("pls work");
   res.setCode(100);
 
   cout << "[server]Trimitem mesajul inapoi..." << res.getMessage() << endl;
