@@ -6,9 +6,10 @@
 class Operand : public Token
 {
   public:
-    Operand(string com)
+    Operand(string com, int pr = 0)
     {
         command = com;
+        priority = pr;
         type = "Operand";
     }
     string getType()

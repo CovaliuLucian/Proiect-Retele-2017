@@ -39,9 +39,9 @@ class Parser
         {
             string op = input.substr(i, 2);
 
-            if (op == "&&" || op == "||")
+            if (op == "&&" || op == "||" || op == "2>")
             {
-                toReturn.push(Operand(Trim(input.substr(last, i - last))));
+                toReturn.push(Operand(Trim(input.substr(last, i - last)), op == "2>" ? 1 : 0));
                 toReturn.push(Operator(op));
                 i++;
                 last = i + 1;
@@ -49,9 +49,9 @@ class Parser
             else
             {
                 op = input.substr(i, 1);
-                if (op == "|" || op == "&" || op == ";" || op == "(" || op == ")")
+                if (op == "|" || op == "&" || op == ";" || op == "(" || op == ")" || op == ">" || op == "<")
                 {
-                    toReturn.push(Operand(Trim(input.substr(last, i - last))));
+                    toReturn.push(Operand(Trim(input.substr(last, i - last)), op == ">" || op == "<" ? 1 : 0));
                     toReturn.push(Operator(op));
                     last = i + 1;
                 }
@@ -101,7 +101,8 @@ class Parser
 
             if (current.getType() == "Operator" && current.command != "(" && current.command != ")")
             {
-                while (!operatorStack.empty() && operatorStack.front().command != "(")
+                while (!operatorStack.empty() && operatorStack.front().priority >= current.priority
+                    && operatorStack.front().command != "(")
                 {
                     toReturn.push(operatorStack.front());
                     operatorStack.pop();
@@ -131,9 +132,9 @@ class Parser
             }
             input.pop();
         }
-        while(!operatorStack.empty())
+        while (!operatorStack.empty())
         {
-            if(operatorStack.front().command == "(" || operatorStack.front().command == ")")
+            if (operatorStack.front().command == "(" || operatorStack.front().command == ")")
                 throw "Mismatched parantheses";
             toReturn.push(operatorStack.front());
             operatorStack.pop();

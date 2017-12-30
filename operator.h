@@ -6,9 +6,10 @@
 class Operator : public Token
 {
   public:
-    Operator(string com)
+    Operator(string com, int pr = 0)
     {
         command = com;
+        priority = pr;
         type = "Operator";
     }
     string getType()

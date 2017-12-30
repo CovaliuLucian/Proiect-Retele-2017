@@ -212,7 +212,7 @@ int sayHello(int fd)
 
   while (!test.empty())
   {
-    cout << test.front().command << " " << test.front().getType() << "\n";
+    cout << test.front().command << " " << test.front().getType() << " " << test.front().priority << "\n";
     test.pop();
   }
 

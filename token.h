@@ -12,10 +12,12 @@ class Token
 
   public:
     string command;
+    int priority;
 
-    Token(string com)
+    Token(string com, int pr = 0)
     {
         command = com;
+        priority = pr;
         type = "Token";
     }
     Token()
