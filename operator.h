@@ -9,6 +9,11 @@ class Operator : public Token
     Operator(string com)
     {
         command = com;
+        type = "Operator";
+    }
+    string getType()
+    {
+        return type;
     }
 };
 

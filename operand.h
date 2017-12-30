@@ -9,6 +9,11 @@ class Operand : public Token
     Operand(string com)
     {
         command = com;
+        type = "Operand";
+    }
+    string getType()
+    {
+        return type;
     }
 };
 

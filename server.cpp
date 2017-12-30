@@ -43,20 +43,22 @@ int sayHello(int fd);
 
 Request readRequest(int sd)
 {
-  char serialized [200];
+  char serialized[200];
   int length;
   int status = read(sd, &length, sizeof length);
-  if(status < 0)
+  if (status < 0)
   {
     //error
   }
   int bytes = read(sd, serialized, length);
-  if(length != bytes || bytes < 0)
+  if (length != bytes || bytes < 0)
   {
     perror("Eroare la read() de la client.\n");
     return 0;
   }
-  serialized[length]=0;
+  serialized[length] = 0;
+  if (serialized[length - 1] == '\n')
+    serialized[length - 1] = 0;
   return Request(serialized);
 }
 
@@ -199,24 +201,31 @@ int sayHello(int fd)
   char buffer[100]; /* mesajul */
   Request r;        //mesajul primit de la client
   Response res;     //mesaj de raspuns pentru client
-  
+
   r = readRequest(fd);
 
   cout << "[server]Mesajul a fost receptionat..." << r.getRequest() << endl;
 
   queue<Token> test = Parser::ParsePrep(r.getRequest());
 
-  while(!test.empty())
+  queue<Token> test2 = Parser::SYA(test);
+
+  while (!test.empty())
   {
-    cout << test.front().command << "\n";
+    cout << test.front().command << " " << test.front().getType() << "\n";
     test.pop();
   }
 
+  while (!test2.empty())
+  {
+    cout << test2.front().command << "\n";
+    test2.pop();
+  }
 
   FILE *fp;
   char path[1000];
   char msg[1000];
-  bzero(msg,1000);
+  bzero(msg, 1000);
   fp = popen(r.getRequest().c_str(), "r");
   while (fgets(path, sizeof(path), fp) != NULL)
   {
