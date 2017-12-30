@@ -4,6 +4,7 @@
 #include "token.h"
 #include "operator.h"
 #include "operand.h"
+#include "tree.h"
 
 using namespace std;
 
@@ -12,8 +13,7 @@ class Parser
   public:
     void static Parse(string input)
     {
-        SYA(ParsePrep(input));
-        // tree
+        GenerateTree(SYA(ParsePrep(input)));
         // exec
     }
 
@@ -101,8 +101,7 @@ class Parser
 
             if (current.getType() == "Operator" && current.command != "(" && current.command != ")")
             {
-                while (!operatorStack.empty() && operatorStack.front().priority >= current.priority
-                    && operatorStack.front().command != "(")
+                while (!operatorStack.empty() && operatorStack.front().priority >= current.priority && operatorStack.front().command != "(")
                 {
                     toReturn.push(operatorStack.front());
                     operatorStack.pop();
@@ -140,5 +139,49 @@ class Parser
             operatorStack.pop();
         }
         return toReturn;
+    }
+
+    //     for each token in the postfix expression:
+    //   if token is an operator:
+    //     operand_2 ← pop from the stack
+    //     operand_1 ← pop from the stack
+    //     result ← evaluate token with operand_1 and operand_2
+    //     push result back onto the stack
+    //   else if token is an operand:
+    //     push token onto the stack
+    // result ← pop from the stack
+
+    Tree static GenerateTree(queue<Token> input)
+    {
+        queue<Tree> Stack = queue<Tree>();
+        Tree newOp;
+        while (!input.empty())
+        {
+            Token current = input.front();
+            if (current.getType() == "Operator")
+            {
+                if (Stack.size() < 2)
+                    throw "Invalid expression around " + current.command;
+                Tree op2 = Stack.front();
+                Stack.pop();
+                Tree op1 = Stack.front();
+                Stack.pop();
+                newOp = Tree(current,op1,op2);
+                Stack.push(newOp);
+            }
+            if(current.getType() == "Operand")
+            {
+                newOp = Tree (current);
+                Stack.push(newOp);
+            }
+            input.pop();
+        }
+
+        return newOp;
+    }
+
+    void Execute(Tree input)
+    {
+        //
     }
 };
