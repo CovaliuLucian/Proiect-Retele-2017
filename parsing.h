@@ -12,53 +12,49 @@
 #include "operator.h"
 #include "operand.h"
 #include "tree.h"
+#include "executed.h"
 
 using namespace std;
 
-class Parser
-{
-  public:
-    void static Parse(string input)
-    {
+class Parser {
+public:
+    void static Parse(string input) {
         GenerateTree(SYA(ParsePrep(input)));
         // exec
     }
 
-  public: // to private
-    string static Trim(string input)
-    {
-        int i = 0;
+public: // to private
+    string static Trim(string input) {
+        unsigned long i = 0;
         while (input[i] == ' ')
             i++;
         return input.substr(i);
     }
-    queue<Token> static ParsePrep(const char *input)
-    {
+
+    queue<Token> static ParsePrep(const char *input) {
         return ParsePrep(string(input));
     }
 
-    queue<Token> static ParsePrep(string input)
-    {
+    queue<Token> static ParsePrep(string input) {
         queue<Token> toReturn = queue<Token>();
 
-        int last = 0, i = 0;
-        while (i != input.size())
-        {
+        unsigned long last = 0, i = 0;
+        while (i != input.size()) {
             string op = input.substr(i, 2);
 
-            if (op == "&&" || op == "||" || op == "2>")
-            {
-                toReturn.push(*new Operand(Trim(input.substr(last, i - last)), op == "2>" ? 1 : 0));
+            if (op == "&&" || op == "||" || op == "2>") {
+                Operand newOp = *new Operand(Trim(input.substr(last, i - last)), op == "2>" ? 1 : 0);
+                if(newOp.command!=" " && !newOp.command.empty())
+                    toReturn.push(newOp);
                 toReturn.push(Operator(op));
                 i++;
                 last = i + 1;
-            }
-            else
-            {
+            } else {
                 op = input.substr(i, 1);
-                if (op == "|" || op == "&" || op == ";" || op == "(" || op == ")" || op == ">" || op == "<")
-                {
-                    toReturn.push(*new Operand(Trim(input.substr(last, i - last)), op == ">" || op == "<" ? 1 : 0));
+                if (op == "|" || op == ";" || op == "(" || op == ")" || op == ">" || op == "<") {
+                    Operand newOp = *new Operand(Trim(input.substr(last, i - last)), op == ">" || op == "<" ? 1 : 0);
+                    if(newOp.command!=" " && !newOp.command.empty())
+                        toReturn.push(newOp);
                     toReturn.push(Operator(op));
                     last = i + 1;
                 }
@@ -66,7 +62,9 @@ class Parser
 
             i++;
         }
-        toReturn.push(*new Operand(Trim(input.substr(last, i - last))));
+        Operand newOp = *new Operand(Trim(input.substr(last, i - last)));
+        if(newOp.command!=" " && !newOp.command.empty())
+            toReturn.push(newOp);
 
         return toReturn;
     }
@@ -96,20 +94,17 @@ class Parser
     // 		there are mismatched parentheses. */
     // 		pop the operator onto the output queue.
     // exit.
-    queue<Token> static SYA(queue<Token> input)
-    {
+    queue<Token> static SYA(queue<Token> input) {
         queue<Token> toReturn = queue<Token>(), operatorStack = queue<Token>();
 
-        while (!input.empty())
-        {
+        while (!input.empty()) {
             Token current = input.front();
             if (current.getType() == "Operand")
                 toReturn.push(current);
 
-            if (current.getType() == "Operator" && current.command != "(" && current.command != ")")
-            {
-                while (!operatorStack.empty() && operatorStack.front().priority >= current.priority && operatorStack.front().command != "(")
-                {
+            if (current.getType() == "Operator" && current.command != "(" && current.command != ")") {
+                while (!operatorStack.empty() && operatorStack.front().priority >= current.priority &&
+                       operatorStack.front().command != "(") {
                     toReturn.push(operatorStack.front());
                     operatorStack.pop();
                 }
@@ -119,27 +114,21 @@ class Parser
             if (current.command == "(")
                 operatorStack.push(current);
 
-            if (current.command == ")")
-            {
-                while (operatorStack.front().command != "(" && !operatorStack.empty())
-                {
+            if (current.command == ")") {
+                while (operatorStack.front().command != "(" && !operatorStack.empty()) {
                     toReturn.push(operatorStack.front());
                     operatorStack.pop();
                 }
-                if (operatorStack.empty())
-                {
+                if (operatorStack.empty()) {
                     throw "Mismatched parantheses";
-                }
-                else
-                {
+                } else {
                     //toReturn.push(operatorStack.front());
                     operatorStack.pop();
                 }
             }
             input.pop();
         }
-        while (!operatorStack.empty())
-        {
+        while (!operatorStack.empty()) {
             if (operatorStack.front().command == "(" || operatorStack.front().command == ")")
                 throw "Mismatched parantheses";
             toReturn.push(operatorStack.front());
@@ -158,15 +147,12 @@ class Parser
     //     push token onto the stack
     // result ← pop from the stack
 
-    Tree static GenerateTree(queue<Token> input)
-    {
+    Tree static GenerateTree(queue<Token> input) {
         queue<Tree> Stack = queue<Tree>();
         Tree *last;
-        while (!input.empty())
-        {
+        while (!input.empty()) {
             Token current = input.front();
-            if (current.getType() == "Operator")
-            {
+            if (current.getType() == "Operator") {
                 if (Stack.size() < 2)
                     throw "Invalid expression around " + current.command;
                 Tree *op2 = &Stack.front();
@@ -178,8 +164,7 @@ class Parser
 
                 last = newOp;
             }
-            if (current.getType() == "Operand")
-            {
+            if (current.getType() == "Operand") {
                 Tree *newOp = new Tree(current);
                 Stack.push(*newOp);
 
@@ -191,49 +176,112 @@ class Parser
         return *last;
     }
 
-    string static Execute(Tree input)
-    {
-        int child = fork();
-        int sockets[2];
+    Executed static Execute(Tree input) {
 
-        if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) < 0)
+        if (input.token.getType() == "Operand" && input.left == nullptr && input.right == nullptr)
         {
-            throw "Socketpair error";
-        }
+            int child = fork();
+            int sockets[2];
 
-        if (child < 0)
-        {
-            throw "Fork error";
-        }
-        if (child) // parent
-        {
-            close(sockets[0]);
+            if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) < 0)
+            {
+                throw "Socketpair error";
+            }
 
-            wait(0);
+            if (child < 0)
+            {
+                throw "Fork error";
+            }
+            if (child) // parent
+            {
+                Executed toReturn;
+                close(sockets[0]);
 
-            char output[1000];
-            int len = read(sockets[1], output, 1000);
+                int stat_loc, exitStatus;
 
-            if (len < 0)
-                throw "?";
+                waitpid(child, &stat_loc, 0);
+                if (stat_loc == 0)
+                    toReturn.status = true;
+                else {
+                    toReturn.statusCode = WEXITSTATUS(stat_loc);
 
-            output[len] = 0;
+                    if(toReturn.statusCode!=0)
+                        toReturn.status = false;
+                }
 
-            return string(output);
+                char output[1001];
+                long len = read(sockets[1], output, 1000);
 
-            close(sockets[1]);
-        }
-        else
-        {
-            close(sockets[1]);
+                if (len < 0)
+                    throw "?";
 
-            dup2(0, sockets[0]);
-            dup2(1, sockets[0]);
+                output[len] = 0;
 
-            execl("/bin/sh", "sh", "-c", input.left->token.command.c_str(), NULL);
+                close(sockets[1]);
 
-            close(sockets[0]);
-            exit(0);
-        }
+                toReturn.result = string(output);
+
+                return toReturn;
+
+            } else
+            {
+                close(sockets[1]);
+
+                dup2(0, sockets[0]); // SEND TO SOCKET (global var)
+                dup2(1, sockets[0]);
+                dup2(2, sockets[0]);
+
+                execl("sh", "sh", "-c", input.token.command.c_str(), NULL);
+
+                close(sockets[0]);
+                exit(0);
+            }
+        } else
+            if(input.token.getType() == "Operator" && input.left != nullptr && input.right != nullptr)
+            {
+                Executed toReturn;
+                toReturn.status = true;
+                if(input.token.command == "&&")
+                {
+                    Executed leftResult = Execute(*input.left),rightResult;
+                    if(leftResult.status)
+                    {
+                        rightResult = Execute(*input.right);
+                        toReturn.result= leftResult.result + rightResult.result;
+                    }
+                    else
+                        toReturn.status = false;
+                    return toReturn;
+                }
+                if(input.token.command == "||")
+                {
+                    Executed leftResult = Execute(*input.left),rightResult;
+                    if(leftResult.status)
+                        toReturn.result = leftResult.result;
+                    else
+                    {
+                        rightResult = Execute(*input.right);
+                        toReturn.result = leftResult.result + rightResult.result;
+                    }
+                    if(!leftResult.status && !rightResult.status)
+                        toReturn.status = false;
+                    return toReturn;
+                }
+                if(input.token.command == ";")
+                {
+                    Executed leftResult = Execute(*input.left),rightResult = Execute(*input.right);
+                    toReturn.status = leftResult.status || rightResult.status;
+                    return toReturn;
+                }
+
+                // should't get here
+                throw "Invalid expression around " + input.token.command;
+            } else
+            if(input.token.command==";" && input.left != nullptr && input.right == nullptr)
+            {
+                return Execute(*input.left);
+            }
+
+
     }
 };

@@ -1,2 +1,6 @@
 
 \.history/
+
+cmake-build-debug/
+
+server

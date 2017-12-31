@@ -121,18 +121,3 @@ int main(int argc, char *argv[])
   /* inchidem conexiunea, am terminat */
   close(sd);
 }
-
-Response test()
-{
-  int sd,resSize;
-
-  char* responseString;
-  
-  Response res;
-  if (read(sd, responseString, resSize) < 0)
-  {
-    res.setMessage("Eroare la read() de la server.\n");
-    res.setCode(201);
-    return res;
-  }
-}

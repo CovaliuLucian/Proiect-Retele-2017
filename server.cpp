@@ -63,7 +63,6 @@ Request readRequest(int sd)
   return Request(serialized);
 }
 
-extern int errno; /* eroarea returnata de unele apeluri */
 
 /* functie de convertire a adresei IP a clientului in sir de caractere */
 char *conv_addr(struct sockaddr_in address)
@@ -223,9 +222,7 @@ int sayHello(int fd)
   //   test2.pop();
   // }
 
-  Tree test3 = Parser::GenerateTree(test2);
-
-  cout << Parser::Execute(test3);
+  string result = Parser::Execute(Parser::GenerateTree(test2)).result;
 
   
   // FILE *fp;
@@ -243,7 +240,7 @@ int sayHello(int fd)
   // res.setMessage(string(msg));
   
 
-  res.setMessage("pls work");
+  res.setMessage(result);
   res.setCode(100);
 
   cout << "[server]Trimitem mesajul inapoi..." << res.getMessage() << endl;

@@ -1,5 +1,8 @@
 #ifndef Treeh
 #define Treeh
+
+#include <utility>
+
 #include "token.h"
 class Tree
 {
@@ -10,18 +13,19 @@ class Tree
 
     Tree() 
     {
-        left = NULL;
-        right = NULL;
+        left = nullptr;
+        right = nullptr;
     }
-    Tree(Token t)
+    explicit Tree(Token t)
     {
-        left = NULL;
-        right = NULL;
-        token = t;
+        left = nullptr;
+        right = nullptr;
+        token = std::move(t);
     }
+
     Tree(Token t, Tree* l, Tree* r)
     {
-        token = t;
+        token = std::move(t);
         left = l;
         right = r;
     }
