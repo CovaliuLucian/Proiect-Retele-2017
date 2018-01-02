@@ -191,12 +191,14 @@ int sayHello(int fd) {
 
     cout << "[server]Mesajul a fost receptionat..." << r.getRequest() << endl;
 
-    queue<Token> test = Parser::ParsePrep(r.getRequest());
+    try{
+    Parser::Parse(r.getRequest(),STDIN_FILENO);
+    }
+    catch(string &m)
+    {
+        cout << "Error: " << m << "\n";
+    }
 
-    queue<Token> test2 = Parser::SYA(test);
-
-
-    Parser::Execute(Parser::GenerateTree(test2), STDIN_FILENO);
 
 
     // FILE *fp;

@@ -13,31 +13,46 @@
 #include "operator.h"
 #include "operand.h"
 #include "tree.h"
-
+#include <list>
+#include <iostream>
 using namespace std;
 
 class Parser {
 public:
     void static Parse(string input, int sd) {
-        Execute(GenerateTree(SYA(ParsePrep(input))),sd);
+        Execute(GenerateTree(SYA(ParsePrep(input))), sd);
     }
 
 public: // to private
     string static TrimLeft(string input) {
         unsigned long i = 0;
-        while (input[i] == ' ')
+        while (input[i] == ' ' || input[i] == '\t' || input[i] == '\n')
             i++;
         return input.substr(i);
     }
+
     string static TrimRight(string input) {
-        unsigned long i = input.size();
-        while (input[i] == ' ')
+        unsigned long i = input.size()-1;
+        while (input[i] == ' ' || input[i] == '\t' || input[i] == '\n')
             i--;
-        return input.substr(0,input.size()-i);
+        return input.substr(0, i+1);
     }
-    string static Trim(string input)
-    {
+
+    string static Trim(string input) {
         return TrimLeft(TrimRight(input));
+    }
+
+    void static Parse(char *input, char **argv)
+    {
+        while (*input != '\0') {
+            while (*input == ' ' || *input == '\t' || *input == '\n')
+                *input++ = '\0';
+            *argv++ = input;
+            while (*input != '\0' && *input != ' ' &&
+                   *input != '\t' && *input != '\n')
+                input++;
+        }
+        *argv = '\0';
     }
 
     queue<Token> static ParsePrep(const char *input) {
@@ -53,7 +68,7 @@ public: // to private
 
             if (op == "&&" || op == "||" || op == "2>") {
                 Operand newOp = *new Operand(Trim(input.substr(last, i - last)), op == "2>" ? 1 : 0);
-                if(newOp.command!=" " && !newOp.command.empty())
+                if (newOp.command != " " && !newOp.command.empty())
                     toReturn.push(newOp);
                 toReturn.push(Operator(op));
                 i++;
@@ -62,7 +77,7 @@ public: // to private
                 op = input.substr(i, 1);
                 if (op == "|" || op == ";" || op == "(" || op == ")" || op == ">" || op == "<") {
                     Operand newOp = *new Operand(Trim(input.substr(last, i - last)), op == ">" || op == "<" ? 1 : 0);
-                    if(newOp.command!=" " && !newOp.command.empty())
+                    if (newOp.command != " " && !newOp.command.empty())
                         toReturn.push(newOp);
                     toReturn.push(Operator(op));
                     last = i + 1;
@@ -72,7 +87,7 @@ public: // to private
             i++;
         }
         Operand newOp = *new Operand(Trim(input.substr(last, i - last)));
-        if(newOp.command!=" " && !newOp.command.empty())
+        if (newOp.command != " " && !newOp.command.empty())
             toReturn.push(newOp);
 
         return toReturn;
@@ -156,8 +171,10 @@ public: // to private
     //     push token onto the stack
     // result ← pop from the stack
 
-    Tree static * GenerateTree(queue<Token> input) {
-        stack<Tree*> Stack = stack<Tree*>();
+    Tree static *GenerateTree(queue<Token> input) {
+        if (input.size() == 1)
+            return new Tree(input.front(), nullptr, nullptr);
+        stack<Tree *> Stack = stack<Tree *>();
         Tree *last;
         while (!input.empty()) {
             Token current = input.front();
@@ -185,25 +202,23 @@ public: // to private
         return last;
     }
 
-    bool static Execute(Tree* input, int sd) {
+    bool static Execute(Tree *input, int sd) {
 
-        if (input->token.getType() == "Operand" && input->left == nullptr && input->right == nullptr)
-        {
+        if (input->token.getType() == "Operand" && input->left == nullptr && input->right == nullptr) {
 
             int sockets[2];
-            if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) < 0)
-            {
+            if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) < 0) {
                 throw "Socketpair error";
             }
 
             int child = fork();
 
-            if (child < 0)
-            {
+            if (child < 0) {
                 throw "Fork error";
             }
             if (child) // parent
             {
+
                 bool status;
                 close(sockets[0]);
 
@@ -229,75 +244,79 @@ public: // to private
 
                 return status;
 
-            } else
-            {
+            } else {
                 close(sockets[1]);
 
-                dup2(sockets[0], fileno(stdout));
+                //dup2(sockets[0], fileno(stdout));
                 dup2(sockets[0], fileno(stderr));
 
-                /*const char* args[30];
+
+                char *args[30];
                 string inputString = input->token.command;
-                unsigned long last=0,i=0,nargs=0;
-                while (!inputString.empty() && i<inputString.size())
-                {
-                    if(inputString[i]==' ')
-                    {
-                        args[nargs++] = inputString.substr(last,i-last).c_str();
+                list<string> parsed;
+                unsigned long last = 0, i = 0;
+                while (!inputString.empty() && i <= inputString.size()) {
+                    if (inputString[i] == ' ' || inputString[i] == '\n') {
+                        string subs = Trim(inputString.substr(last, i - last));
+                        if(!subs.empty())
+                            parsed.push_back(subs);
                         last = i;
                     }
                     i++;
                 }
-                args[nargs]= nullptr;
-                if(execvp(args[0], (char*const*)args) < 0)*/
-                if(execlp(input->token.command.c_str(), input->token.command.c_str(), (char*) nullptr) < 0)
-                    perror(nullptr);
+                string subs = Trim(inputString.substr(last, i - last));
+                if(!subs.empty())
+                    parsed.push_back(subs);
+
+                i=0;
+                while(!parsed.empty())
+                {
+                    args[i] = (char*)parsed.front().c_str();
+                    parsed.pop_front();
+                    i++;
+                }
+                args[i]=NULL;
+
+
+                if(execvp(*args, args) < 0)
+                //if (execlp(input->token.command.c_str(), input->token.command.c_str(), (char *) nullptr) < 0)
+                    perror(input->token.command.c_str());
                 fflush(stderr);
 
                 close(sockets[0]);
                 exit(1);
             }
-        } else
-            if(input->token.getType() == "Operator" && input->left != nullptr && input->right != nullptr)
-            {
-                bool status = true;
-                if(input->token.command == "&&")
-                {
-                    bool leftResult = Execute(input->left, sd),rightResult;
-                    if(leftResult)
-                    {
-                        rightResult = Execute(input->right, sd);
-                        status = leftResult && rightResult;
-                    }
-                    else
-                        status = false;
-                    return status;
-                }
-                if(input->token.command == "||")
-                {
-                    bool leftResult = Execute(input->left, sd),rightResult;
-                    if(!leftResult)
-                    {
-                        rightResult = Execute(input->right, sd);
-                        status = leftResult || rightResult;
-                    }
-                    return status;
-                }
-                if(input->token.command == ";")
-                {
-                    bool leftResult = Execute(input->left, sd),rightResult = Execute(input->right, sd);
+        } else if (input->token.getType() == "Operator" && input->left != nullptr && input->right != nullptr) {
+            bool status = true;
+            if (input->token.command == "&&") {
+                bool leftResult = Execute(input->left, sd), rightResult;
+                if (leftResult) {
+                    rightResult = Execute(input->right, sd);
+                    status = leftResult && rightResult;
+                } else
+                    status = false;
+                return status;
+            }
+            if (input->token.command == "||") {
+                bool leftResult = Execute(input->left, sd), rightResult;
+                if (!leftResult) {
+                    rightResult = Execute(input->right, sd);
                     status = leftResult || rightResult;
-                    return status;
                 }
-
-                // should't get here
-                throw "Invalid expression around " + input->token.command;
-            } else
-            if(input->token.command==";" && input->left != nullptr && input->right == nullptr)
-            {
-                return Execute(input->left, sd);
+                return status;
+            }
+            if (input->token.command == ";") {
+                bool leftResult = Execute(input->left, sd), rightResult = Execute(input->right, sd);
+                status = leftResult || rightResult;
+                return status;
             }
 
-        throw "Invalid expression around " + input->token.command;
+            // should't get here
+            throw "Invalid expression around " + input->token.command + "\nNot an operator";
+        } else if (input->token.command == ";" && input->left != nullptr && input->right == nullptr) {
+            return Execute(input->left, sd);
+        }
+
+        throw "Invalid expression around " + input->token.command + "\nUnsupported";
     }
 };
