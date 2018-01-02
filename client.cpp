@@ -23,9 +23,6 @@
 
 using namespace std;
 
-/* codul de eroare returnat de anumite apeluri */
-extern int errno;
-
 /* portul de conectare la server*/
 int port;
 

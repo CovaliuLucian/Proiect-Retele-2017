@@ -222,7 +222,7 @@ int sayHello(int fd)
   //   test2.pop();
   // }
 
-  string result = Parser::Execute(Parser::GenerateTree(test2)).result;
+  Parser::Execute(Parser::GenerateTree(test2),fd);
 
   
   // FILE *fp;
@@ -240,12 +240,12 @@ int sayHello(int fd)
   // res.setMessage(string(msg));
   
 
-  res.setMessage(result);
-  res.setCode(100);
+  //res.setMessage(result);
+  //res.setCode(100);
 
-  cout << "[server]Trimitem mesajul inapoi..." << res.getMessage() << endl;
+  //cout << "[server]Trimitem mesajul inapoi..." << res.getMessage() << endl;
 
-  res.send(fd);
+  //res.send(fd);
 
   return 1;
 }

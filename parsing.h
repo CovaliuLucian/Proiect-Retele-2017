@@ -176,7 +176,7 @@ public: // to private
         return *last;
     }
 
-    Executed static Execute(Tree input) {
+    bool static Execute(Tree input, int sd) {
 
         if (input.token.getType() == "Operand" && input.left == nullptr && input.right == nullptr)
         {
@@ -194,20 +194,13 @@ public: // to private
             }
             if (child) // parent
             {
-                Executed toReturn;
+                bool status;
                 close(sockets[0]);
 
                 int stat_loc, exitStatus;
 
                 waitpid(child, &stat_loc, 0);
-                if (stat_loc == 0)
-                    toReturn.status = true;
-                else {
-                    toReturn.statusCode = WEXITSTATUS(stat_loc);
-
-                    if(toReturn.statusCode!=0)
-                        toReturn.status = false;
-                }
+                status = stat_loc == 0 ? true : WEXITSTATUS(stat_loc) == 0;
 
                 char output[1001];
                 long len = read(sockets[1], output, 1000);
@@ -219,9 +212,12 @@ public: // to private
 
                 close(sockets[1]);
 
-                toReturn.result = string(output);
+                Response res;
+                res.setCode(100);
+                res.setMessage(string(output));
+                res.send(sd);
 
-                return toReturn;
+                return status;
 
             } else
             {
@@ -239,39 +235,34 @@ public: // to private
         } else
             if(input.token.getType() == "Operator" && input.left != nullptr && input.right != nullptr)
             {
-                Executed toReturn;
-                toReturn.status = true;
+                bool status = true;
                 if(input.token.command == "&&")
                 {
-                    Executed leftResult = Execute(*input.left),rightResult;
-                    if(leftResult.status)
+                    bool leftResult = Execute(*input.left, sd),rightResult;
+                    if(leftResult)
                     {
-                        rightResult = Execute(*input.right);
-                        toReturn.result= leftResult.result + rightResult.result;
+                        rightResult = Execute(*input.right, sd);
+                        status = leftResult && rightResult;
                     }
                     else
-                        toReturn.status = false;
-                    return toReturn;
+                        status = false;
+                    return status;
                 }
                 if(input.token.command == "||")
                 {
-                    Executed leftResult = Execute(*input.left),rightResult;
-                    if(leftResult.status)
-                        toReturn.result = leftResult.result;
-                    else
+                    bool leftResult = Execute(*input.left, sd),rightResult;
+                    if(!leftResult)
                     {
-                        rightResult = Execute(*input.right);
-                        toReturn.result = leftResult.result + rightResult.result;
+                        rightResult = Execute(*input.right, sd);
+                        status = leftResult || rightResult;
                     }
-                    if(!leftResult.status && !rightResult.status)
-                        toReturn.status = false;
-                    return toReturn;
+                    return status;
                 }
                 if(input.token.command == ";")
                 {
-                    Executed leftResult = Execute(*input.left),rightResult = Execute(*input.right);
-                    toReturn.status = leftResult.status || rightResult.status;
-                    return toReturn;
+                    bool leftResult = Execute(*input.left, sd),rightResult = Execute(*input.right, sd);
+                    status = leftResult || rightResult;
+                    return status;
                 }
 
                 // should't get here
@@ -279,7 +270,7 @@ public: // to private
             } else
             if(input.token.command==";" && input.left != nullptr && input.right == nullptr)
             {
-                return Execute(*input.left);
+                return Execute(*input.left, sd);
             }
 
 
