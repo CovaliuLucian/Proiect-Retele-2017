@@ -49,7 +49,7 @@ class Response
         sprintf(code, "%i", getCode());
         string serializedString = string(code) + getMessage();
         const char *serialized = serializedString.c_str();
-        int sizeRes = (int)strlen(serialized);
+        size_t sizeRes = strlen(serialized);
 
         if (write(sd, &sizeRes, sizeof(int)) < 0)
         {

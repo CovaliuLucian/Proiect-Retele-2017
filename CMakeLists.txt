@@ -18,4 +18,4 @@ add_executable(server
         response.h
         server.cpp
         token.h
-        tree.h executed.h)
+        tree.h)
