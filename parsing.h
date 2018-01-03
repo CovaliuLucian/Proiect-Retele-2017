@@ -8,6 +8,8 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "token.h"
 #include "operator.h"
@@ -15,12 +17,13 @@
 #include "tree.h"
 #include <list>
 #include <iostream>
+
 using namespace std;
 
 class Parser {
 public:
     void static Parse(string input, int sd) {
-        Execute(GenerateTree(SYA(ParsePrep(input))), sd);
+        Execute(GenerateTree(SYA(ParsePrep(input))), sd, -1, -1);
     }
 
 public: // to private
@@ -32,18 +35,17 @@ public: // to private
     }
 
     string static TrimRight(string input) {
-        unsigned long i = input.size()-1;
+        unsigned long i = input.size() - 1;
         while (input[i] == ' ' || input[i] == '\t' || input[i] == '\n')
             i--;
-        return input.substr(0, i+1);
+        return input.substr(0, i + 1);
     }
 
     string static Trim(string input) {
         return TrimLeft(TrimRight(input));
     }
 
-    void static Parse(char *input, char **argv)
-    {
+    void static Parse(char *input, char **argv) {
         while (*input != '\0') {
             while (*input == ' ' || *input == '\t' || *input == '\n')
                 *input++ = '\0';
@@ -202,7 +204,7 @@ public: // to private
         return last;
     }
 
-    bool static Execute(Tree *input, int sd) {
+    bool static Execute(Tree *input, int sd, int redirectOut, int redirectErr) {
 
         if (input->token.getType() == "Operand" && input->left == nullptr && input->right == nullptr) {
 
@@ -247,8 +249,15 @@ public: // to private
             } else {
                 close(sockets[1]);
 
-                //dup2(sockets[0], fileno(stdout));
-                dup2(sockets[0], fileno(stderr));
+                if (redirectOut > 0)
+                    dup2(redirectOut, fileno(stdout));
+                else
+                    dup2(sockets[0], fileno(stdout));
+
+                if (redirectErr > 0)
+                    dup2(redirectErr, fileno(stderr));
+                else
+                    dup2(sockets[0], fileno(stderr));
 
 
                 char *args[30];
@@ -258,28 +267,27 @@ public: // to private
                 while (!inputString.empty() && i <= inputString.size()) {
                     if (inputString[i] == ' ' || inputString[i] == '\n') {
                         string subs = Trim(inputString.substr(last, i - last));
-                        if(!subs.empty())
+                        if (!subs.empty())
                             parsed.push_back(subs);
                         last = i;
                     }
                     i++;
                 }
                 string subs = Trim(inputString.substr(last, i - last));
-                if(!subs.empty())
+                if (!subs.empty())
                     parsed.push_back(subs);
 
-                i=0;
-                while(!parsed.empty())
-                {
-                    args[i] = (char*)parsed.front().c_str();
+                i = 0;
+                while (!parsed.empty()) {
+                    args[i] = (char *) parsed.front().c_str();
                     parsed.pop_front();
                     i++;
                 }
-                args[i]=NULL;
+                args[i] = NULL;
 
 
-                if(execvp(*args, args) < 0)
-                //if (execlp(input->token.command.c_str(), input->token.command.c_str(), (char *) nullptr) < 0)
+                if (execvp(*args, args) < 0)
+                    //if (execlp(input->token.command.c_str(), input->token.command.c_str(), (char *) nullptr) < 0)
                     perror(input->token.command.c_str());
                 fflush(stderr);
 
@@ -289,32 +297,54 @@ public: // to private
         } else if (input->token.getType() == "Operator" && input->left != nullptr && input->right != nullptr) {
             bool status = true;
             if (input->token.command == "&&") {
-                bool leftResult = Execute(input->left, sd), rightResult;
+                bool leftResult = Execute(input->left, sd, redirectOut, redirectErr), rightResult;
                 if (leftResult) {
-                    rightResult = Execute(input->right, sd);
+                    rightResult = Execute(input->right, sd, redirectOut, redirectErr);
                     status = leftResult && rightResult;
                 } else
                     status = false;
                 return status;
             }
             if (input->token.command == "||") {
-                bool leftResult = Execute(input->left, sd), rightResult;
+                bool leftResult = Execute(input->left, sd, redirectOut, redirectErr), rightResult;
                 if (!leftResult) {
-                    rightResult = Execute(input->right, sd);
+                    rightResult = Execute(input->right, sd, redirectOut, redirectErr);
                     status = leftResult || rightResult;
                 }
                 return status;
             }
             if (input->token.command == ";") {
-                bool leftResult = Execute(input->left, sd), rightResult = Execute(input->right, sd);
+                bool leftResult = Execute(input->left, sd, redirectOut, redirectErr), rightResult = Execute(
+                        input->right, sd, redirectOut, redirectErr);
                 status = leftResult || rightResult;
                 return status;
+            }
+            if (input->token.command == ">") {
+                int fileD = open(input->right->token.command.c_str(), O_WRONLY | O_CREAT);
+                if (fileD < 0)
+                    perror(nullptr);
+                if (fchmod(fileD,
+                           S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH) < 0)
+                    perror(nullptr);
+                bool leftResult = Execute(input->left, sd, fileD, redirectErr);
+                return leftResult;
+            }
+
+            if (input->token.command == "2>") {
+                int fileD = open(input->right->token.command.c_str(), O_WRONLY | O_CREAT);
+                if (fileD < 0)
+                    perror(nullptr);
+                if (fchmod(fileD,
+                           S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH) < 0)
+                    perror(nullptr);
+                bool leftResult = Execute(input->left, sd, redirectOut, fileD);
+                return leftResult;
             }
 
             // should't get here
             throw "Invalid expression around " + input->token.command + "\nNot an operator";
         } else if (input->token.command == ";" && input->left != nullptr && input->right == nullptr) {
-            return Execute(input->left, sd);
+            return Execute(input->left, sd, redirectOut, redirectErr);
         }
 
         throw "Invalid expression around " + input->token.command + "\nUnsupported";
