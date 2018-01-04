@@ -6,8 +6,8 @@
 #include <sys/wait.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <sys/stat.h>
 #include <fcntl.h>
 
@@ -17,16 +17,21 @@
 #include "tree.h"
 #include <list>
 #include <iostream>
+#include <utility>
 
 using namespace std;
 
 class Parser {
 public:
-    void static Parse(string input, int sd) {
+    void static Parse(const string &input, int sd) {
         Execute(GenerateTree(SYA(ParsePrep(input))), sd, -1, -1);
     }
 
 public: // to private
+    static const int openModes = O_WRONLY | O_CREAT | O_TRUNC;
+    static const int permission =
+            S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH;
+
     string static TrimLeft(string input) {
         unsigned long i = 0;
         while (input[i] == ' ' || input[i] == '\t' || input[i] == '\n')
@@ -42,26 +47,15 @@ public: // to private
     }
 
     string static Trim(string input) {
-        return TrimLeft(TrimRight(input));
+        return TrimLeft(TrimRight(std::move(input)));
     }
 
-    void static Parse(char *input, char **argv) {
-        while (*input != '\0') {
-            while (*input == ' ' || *input == '\t' || *input == '\n')
-                *input++ = '\0';
-            *argv++ = input;
-            while (*input != '\0' && *input != ' ' &&
-                   *input != '\t' && *input != '\n')
-                input++;
-        }
-        *argv = '\0';
-    }
 
     queue<Token> static ParsePrep(const char *input) {
         return ParsePrep(string(input));
     }
 
-    queue<Token> static ParsePrep(string input) {
+    queue<Token> static ParsePrep(const string &input) {
         queue<Token> toReturn = queue<Token>();
 
         unsigned long last = 0, i = 0;
@@ -213,6 +207,14 @@ public: // to private
                 throw "Socketpair error";
             }
 
+            if (input->token.command.substr(0, 2) == "cd") {
+                if (chdir(input->token.command.substr(3).c_str()) == -1) {
+                    perror("cd");
+                    return false;
+                }
+                return true;
+            }
+
             int child = fork();
 
             if (child < 0) {
@@ -283,7 +285,7 @@ public: // to private
                     parsed.pop_front();
                     i++;
                 }
-                args[i] = NULL;
+                args[i] = NULL; // NOLINT
 
 
                 if (execvp(*args, args) < 0)
@@ -320,25 +322,48 @@ public: // to private
                 return status;
             }
             if (input->token.command == ">") {
-                int fileD = open(input->right->token.command.c_str(), O_WRONLY | O_CREAT);
+                int fileD = open(input->right->token.command.c_str(), openModes);
                 if (fileD < 0)
                     perror(nullptr);
-                if (fchmod(fileD,
-                           S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH) < 0)
+                if (fchmod(fileD, permission) < 0)
                     perror(nullptr);
                 bool leftResult = Execute(input->left, sd, fileD, redirectErr);
                 return leftResult;
             }
 
             if (input->token.command == "2>") {
-                int fileD = open(input->right->token.command.c_str(), O_WRONLY | O_CREAT);
+                int fileD = open(input->right->token.command.c_str(), openModes);
                 if (fileD < 0)
                     perror(nullptr);
-                if (fchmod(fileD,
-                           S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH) < 0)
+                if (fchmod(fileD, permission) < 0)
                     perror(nullptr);
                 bool leftResult = Execute(input->left, sd, redirectOut, fileD);
+                close(fileD);
                 return leftResult;
+            }
+            if (input->token.command == "|") {
+                int fileD = open("redirect", openModes);
+                if (fileD < 0)
+                    perror(nullptr);
+                if (fchmod(fileD, permission) < 0)
+                    perror(nullptr);
+                bool leftResult = Execute(input->left, sd, fileD, fileD);
+                input->right->token.command += " redirect";
+                bool rightResult = Execute(input->right, sd, redirectOut, redirectErr);
+                if (remove("redirect") < 0)
+                    perror(nullptr);
+                close(fileD);
+                return leftResult || rightResult;
+            }
+            if (input->token.command == "<") {
+                int fileD = open(input->left->token.command.c_str(), openModes);
+                if (fileD < 0)
+                    perror(nullptr);
+                if (fchmod(fileD, permission) < 0)
+                    perror(nullptr);
+                input->right->token.command += " " + input->left->token.command;
+                bool rightResult = Execute(input->right, sd, redirectOut, redirectErr);
+                return rightResult;
             }
 
             // should't get here

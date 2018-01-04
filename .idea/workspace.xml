@@ -13,7 +13,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="2ac928ee-2995-49ac-9e9f-7b711b0fcaf9" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change beforePath="$PROJECT_DIR$/parsing.h" afterPath="$PROJECT_DIR$/parsing.h" />
     </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
@@ -50,11 +49,10 @@
       <file leaf-file-name="parsing.h" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/parsing.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="74">
-              <caret line="311" column="55" lean-forward="false" selection-start-line="311" selection-start-column="55" selection-end-line="311" selection-end-column="55" />
+            <state relative-caret-position="452">
+              <caret line="367" column="0" lean-forward="false" selection-start-line="367" selection-start-column="0" selection-end-line="367" selection-end-column="0" />
               <folding>
-                <element signature="e#0#17#0" expanded="true" />
-                <marker date="1514978371392" expanded="true" signature="9848:9893" ph="/.../" />
+                <marker date="1515061068119" expanded="true" signature="9980:10025" ph="/.../" />
               </folding>
             </state>
           </provider>
@@ -196,12 +194,12 @@
       <workItem from="1514717111552" duration="10274000" />
       <workItem from="1514890964787" duration="10850000" />
       <workItem from="1514916175980" duration="7216000" />
-      <workItem from="1514974605480" duration="3930000" />
+      <workItem from="1514974605480" duration="7208000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="32270000" />
+    <option name="totallyTimeSpent" value="35548000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="65" y="-4" width="1301" height="772" extended-state="6" />
@@ -279,8 +277,7 @@
         <state relative-caret-position="4518">
           <caret line="251" column="18" lean-forward="false" selection-start-line="251" selection-start-column="18" selection-end-line="251" selection-end-column="18" />
           <folding>
-            <element signature="e#0#17#0" expanded="true" />
-            <marker date="1514978371392" expanded="true" signature="9848:9893" ph="/.../" />
+            <marker date="1515061068119" expanded="true" signature="9980:10025" ph="/.../" />
           </folding>
         </state>
       </provider>
@@ -322,8 +319,7 @@
         <state relative-caret-position="4122">
           <caret line="229" column="67" lean-forward="false" selection-start-line="229" selection-start-column="67" selection-end-line="229" selection-end-column="67" />
           <folding>
-            <element signature="e#0#17#0" expanded="true" />
-            <marker date="1514978371392" expanded="true" signature="9848:9893" ph="/.../" />
+            <marker date="1515061068119" expanded="true" signature="9980:10025" ph="/.../" />
           </folding>
         </state>
       </provider>
@@ -402,11 +398,10 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/parsing.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="74">
-          <caret line="311" column="55" lean-forward="false" selection-start-line="311" selection-start-column="55" selection-end-line="311" selection-end-column="55" />
+        <state relative-caret-position="452">
+          <caret line="367" column="0" lean-forward="false" selection-start-line="367" selection-start-column="0" selection-end-line="367" selection-end-column="0" />
           <folding>
-            <element signature="e#0#17#0" expanded="true" />
-            <marker date="1514978371392" expanded="true" signature="9848:9893" ph="/.../" />
+            <marker date="1515061068119" expanded="true" signature="9980:10025" ph="/.../" />
           </folding>
         </state>
       </provider>
