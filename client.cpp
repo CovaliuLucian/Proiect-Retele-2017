@@ -90,31 +90,37 @@ int main(int argc, char *argv[])
     return errno;
   }
 
-  /* citirea mesajului */
-  bzero(msg, 100);
-  printf("[client]Introduceti comanda: ");
-  fflush(stdout);
-  read(0, msg, 100);
+    while(true) {
+        /* citirea mesajului */
+        bzero(msg, 100);
+        printf("[client]Introduceti comanda: ");
+        fflush(stdout);
+        read(0, msg, 100);
 
-  Request r = Request(msg);
+        Request r = Request(msg);
 
-  cout << r.getRequest();
-  cout.flush();
+        cout << r.getRequest();
+        cout.flush();
 
-  /* trimiterea mesajului la server */
-  if (r.send(sd) <= 0)
-  {
-    perror("[client]Eroare la write() spre server.\n");
-    return errno;
-  }
+        /* trimiterea mesajului la server */
+        if (r.send(sd) <= 0) {
+            perror("[client]Eroare la write() spre server.\n");
+            return errno;
+        }
 
-  /* citirea raspunsului dat de server 
-     (apel blocant pina cind serverul raspunde) */
-  
-  Response res = readResponse(sd);
-  /* afisam mesajul primit */
-  cout << "[client]Mesajul primit este: \n" <<  res.getMessage() << endl;
+        if(r.getRequest() == "exit\n" || r.getRequest() == "Exit\n")
+            break;
 
+        /* citirea raspunsului dat de server
+           (apel blocant pina cind serverul raspunde) */
+
+        Response res = readResponse(sd);
+        while(res.getCode() != 101)
+        {
+            cout << "[client]Mesajul primit este: \n" << res.getMessage() << endl;
+            res = readResponse(sd);
+        }
+    }
   /* inchidem conexiunea, am terminat */
   close(sd);
 }

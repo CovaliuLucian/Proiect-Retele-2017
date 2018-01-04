@@ -13,15 +13,18 @@ class Request
 {
   private:
     string request;
+    bool succes;
 
   public:
     Request(string r)
     {
         request = r;
+        succes = true;
     }
     Request(char *r)
     {
         request = string(r);
+        succes = true;
     }
     Request()
     {
@@ -49,5 +52,13 @@ class Request
             // error
         }
         return status;
+    }
+    void setStatus(bool s)
+    {
+        succes = s;
+    }
+    bool getStatus()
+    {
+        return succes;
     }
 };
