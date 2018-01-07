@@ -157,6 +157,16 @@ static void *treat(void *arg) {
 
 };
 
+bool logIn(string name, string pass)
+{
+    return true;
+}
+
+bool checkAccount(string name)
+{
+    return true;
+}
+
 void raspunde(void *arg) {
     int nr, i = 0;
     struct thData tdL;
@@ -164,8 +174,69 @@ void raspunde(void *arg) {
     int fd = tdL.cl;
     Request r;        //mesajul primit de la client
     Response res;     //mesaj de raspuns pentru client
+    bool loggedIn = false, admin = false;
+
+    while(!loggedIn)
+    {
+        r = readRequest(fd);
+        if(!r.getStatus())
+            break;
+
+        cout << "[server]Mesajul a fost receptionat..." << r.getRequest() << endl;
+
+        if (r.getRequest() == "exit" || r.getRequest() == "Exit") {
+            break;
+        }
+
+
+        if(checkAccount(r.getRequest()))
+        {
+            string name = r.getRequest();
+
+            res.setMessage("Account iz good");
+            res.setCode(103);
+
+            res.send(fd);
+
+            r = readRequest(fd);
+            if(!r.getStatus())
+                break;
+
+            cout << "[server]Mesajul a fost receptionat..." << r.getRequest() << endl;
+
+            if (r.getRequest() == "exit" || r.getRequest() == "Exit") {
+                break;
+            }
+
+            if(logIn(name,r.getRequest()))
+            {
+                loggedIn = true;
+                if(name == "Admin")
+                    admin = true;
+            }
+        } else
+        {
+            res.setMessage("Account name not found");
+            res.setCode(202);
+            res.send(fd);
+        }
+
+        res.setMessage("Done");
+        if(loggedIn)
+            res.setCode(101);
+        else
+        {
+            res.setMessage("Not logged in");
+            res.setCode(201);
+        }
+
+        cout << "[server]Trimitem mesajul inapoi..." << res.getMessage() << endl;
+
+        res.send(fd);
+    }
 
     while (true) {
+
         r = readRequest(fd);
         if(!r.getStatus())
             break;
