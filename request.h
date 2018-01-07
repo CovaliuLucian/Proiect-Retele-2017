@@ -1,4 +1,5 @@
 #include <string>
+#include <utility>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -18,10 +19,10 @@ class Request
   public:
     Request(string r)
     {
-        request = r;
+        request = std::move(r);
         succes = true;
     }
-    Request(char *r)
+    Request(const char *r)
     {
         request = string(r);
         succes = true;
@@ -37,8 +38,9 @@ class Request
     int send(int sd)
     {
         int status;
-        char *serialized = (char *)getRequest().c_str();
-        int len = (int)getRequest().size();
+        string test = getRequest();
+        const char *serialized = test.c_str();
+        int len = (int)getRequest().length();
 
         status = write(sd, &len, sizeof len);
         if (status < 0)

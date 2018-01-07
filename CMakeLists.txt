@@ -3,7 +3,9 @@ project(Proiect_Retele)
 
 set(CMAKE_CXX_STANDARD 11)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -lssl -lcrypto")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -L/usr/lib -lssl -lcrypto")
+
+link_libraries(crypto)
 
 add_executable(client
         client.cpp

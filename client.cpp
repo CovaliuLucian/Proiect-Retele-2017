@@ -21,7 +21,6 @@
 #include <iostream>
 #include <openssl/bio.h>
 #include <openssl/ssl.h>
-#include <openssl/err.h>
 #include <openssl/sha.h>
 #include <string>
 #include <iomanip>
@@ -55,7 +54,7 @@ Response readResponse(int sd) {
     return toReturn;
 }
 
-string sha256(const string str)
+string sha256(const string &str)
 {
     unsigned char hash[SHA256_DIGEST_LENGTH];
     SHA256_CTX sha256;
@@ -70,6 +69,13 @@ string sha256(const string str)
 }
 
 int main(int argc, char *argv[]) {
+
+    // SSL_library_init();
+    // SSL_load_error_strings();
+
+
+
+
     int sd;                    // descriptorul de socket
     struct sockaddr_in server; // structura folosita pentru conectare
     char msg[100];             // mesajul trimis
@@ -133,14 +139,15 @@ int main(int argc, char *argv[]) {
                 fflush(stdout);
                 read(0, msg, 100);
 
-                Request r = Request(sha256(msg));
+                string hashedPassword = *new string(sha256(msg));
+                Request r2 = Request(hashedPassword.c_str());
 
-                if (r.send(sd) <= 0) {
+                if (r2.send(sd) <= 0) {
                     perror("[client]Eroare la write() spre server.\n");
                     return errno;
                 }
 
-                if (r.getRequest() == "exit\n" || r.getRequest() == "Exit\n")
+                if (r2.getRequest() == "exit\n" || r2.getRequest() == "Exit\n")
                     break;
             } else if (res.getCode() == 202) {
                 printf("This account does not exist.\n");
