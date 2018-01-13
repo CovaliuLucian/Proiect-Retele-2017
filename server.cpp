@@ -31,18 +31,19 @@
 #include <openssl/err.h>
 #include <openssl/sha.h>
 
-#include <sqlite3.h>
+#include <xercesc/util/PlatformUtils.hpp>
 
 #include <iostream>
 
 
 using namespace std;
+using namespace xercesc;
 
 /* portul folosit */
 
 #define PORT 2728
 
-sqlite3 *db;
+
 
 Request readRequest(int sd) {
     char serialized[200];
@@ -67,15 +68,15 @@ Request readRequest(int sd) {
     return Request(serialized);
 }
 
-bool prepareDataBase(const string &name)
+bool Initialize(const string &name)
 {
-    if(sqlite3_open(name.c_str(),&db) != SQLITE_OK)
-    {
-        sqlite3_close(db);
-        cerr << "Error opening database: " << sqlite3_errmsg(db);
-        return false;
+    try {
+        XMLPlatformUtils::Initialize();
     }
-    return true;
+    catch (const XMLException& toCatch) {
+        return 0;
+    }
+    return 1;
 }
 
 
@@ -96,7 +97,7 @@ int main() {
     pthread_t th[100];    //Identificatorii thread-urilor care se vor crea
     int i = 0;
 
-    if(!prepareDataBase("SSH")) return 0;
+    if(!Initialize("SSH")) return 0;
 
 
     /* crearea unui socket */
