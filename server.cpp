@@ -31,6 +31,8 @@
 #include <openssl/err.h>
 #include <openssl/sha.h>
 
+#include <sqlite3.h>
+
 #include <iostream>
 
 
@@ -39,6 +41,8 @@ using namespace std;
 /* portul folosit */
 
 #define PORT 2728
+
+sqlite3 *db;
 
 Request readRequest(int sd) {
     char serialized[200];
@@ -63,6 +67,17 @@ Request readRequest(int sd) {
     return Request(serialized);
 }
 
+bool prepareDataBase(const string &name)
+{
+    if(sqlite3_open(name.c_str(),&db) != SQLITE_OK)
+    {
+        sqlite3_close(db);
+        cerr << "Error opening database: " << sqlite3_errmsg(db);
+        return false;
+    }
+    return true;
+}
+
 
 typedef struct thData {
     int idThread; //id-ul thread-ului tinut in evidenta de acest program
@@ -80,6 +95,8 @@ int main() {
     int pid;
     pthread_t th[100];    //Identificatorii thread-urilor care se vor crea
     int i = 0;
+
+    if(!prepareDataBase("SSH")) return 0;
 
 
     /* crearea unui socket */
