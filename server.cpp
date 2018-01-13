@@ -25,6 +25,7 @@
 #include "parsing.h"
 #include "token.h"
 #include "tree.h"
+#include "DataBase.h"
 
 #include <openssl/bio.h>
 #include <openssl/ssl.h>
@@ -39,7 +40,7 @@
 
 using namespace std;
 
-sqlite3 *db;
+DataBase db;
 
 /* portul folosit */
 
@@ -70,17 +71,6 @@ Request readRequest(int sd) {
     return Request(serialized);
 }
 
-bool prepareDataBase(const string &name)
-{
-    if(sqlite3_open(name.c_str(),&db) != SQLITE_OK)
-    {
-        sqlite3_close(db);
-        cerr << "Error opening database: " << sqlite3_errmsg(db);
-        return false;
-    }
-    return true;
-}
-
 
 typedef struct thData {
     int idThread; //id-ul thread-ului tinut in evidenta de acest program
@@ -99,7 +89,7 @@ int main() {
     pthread_t th[100];    //Identificatorii thread-urilor care se vor crea
     int i = 0;
 
-    if(!prepareDataBase("SSH")) return 0;
+    if(!db.Prepare("SSH")) return 0;
 
 
     /* crearea unui socket */
@@ -163,7 +153,6 @@ int main() {
         pthread_create(&th[i], NULL, &treat, td);
     }//while
 
-    sqlite3_close(db);
 };
 
 static void *treat(void *arg) {
@@ -179,15 +168,6 @@ static void *treat(void *arg) {
 
 };
 
-bool logIn(string name, string pass)
-{
-    return true;
-}
-
-bool checkAccount(string name)
-{
-    return true;
-}
 
 void raspunde(void *arg) {
     int nr, i = 0;
@@ -211,7 +191,7 @@ void raspunde(void *arg) {
         }
 
 
-        if(checkAccount(r.getRequest()))
+        if(db.CheckAccount(r.getRequest()))
         {
             string name = r.getRequest();
 
@@ -230,7 +210,7 @@ void raspunde(void *arg) {
                 break;
             }
 
-            if(logIn(name,r.getRequest()))
+            if(db.CheckAccount(name,r.getRequest()))
             {
                 loggedIn = true;
                 if(name == "Admin")

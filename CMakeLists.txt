@@ -14,7 +14,7 @@ add_executable(client
         operand.h
         operator.h
         request.h
-        response.h)
+        response.h Crypto.cpp Crypto.h)
 
 add_executable(server
         operand.h
@@ -24,7 +24,7 @@ add_executable(server
         response.h
         server.cpp
         token.h
-        tree.h)
+        tree.h DataBase.cpp DataBase.h Crypto.cpp Crypto.h)
 
-add_executable(XML
-        XMLCreate.cpp)
+add_executable(DBCreate
+        DatabaseCreate.cpp DataBase.cpp DataBase.h Crypto.cpp Crypto.h)

@@ -8,12 +8,12 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <errno.h>
+#include <cerrno>
 #include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <netdb.h>
-#include <string.h>
+#include <cstring>
 
 #include "request.h"
 #include "response.h"
@@ -25,6 +25,8 @@
 #include <string>
 #include <iomanip>
 #include <sstream>
+
+#include "Crypto.h"
 
 using namespace std;
 
@@ -52,20 +54,6 @@ Response readResponse(int sd) {
     toReturn.setMessage(serializedString.substr(3));
 
     return toReturn;
-}
-
-string sha256(const string &str)
-{
-    unsigned char hash[SHA256_DIGEST_LENGTH];
-    SHA256_CTX sha256;
-    SHA256_Init(&sha256);
-    SHA256_Update(&sha256, str.c_str(), str.size());
-    SHA256_Final(hash, &sha256);
-    stringstream ss;
-    for (unsigned char i : hash) {
-        ss << hex << setw(2) << setfill('0') << (int) i;
-    }
-    return ss.str();
 }
 
 int main(int argc, char *argv[]) {
@@ -138,8 +126,10 @@ int main(int argc, char *argv[]) {
                 printf("Password: ");
                 fflush(stdout);
                 read(0, msg, 100);
+                if(msg[strlen(msg)-1] == '\n')
+                    msg[strlen(msg)-1] = '\0';
 
-                string hashedPassword = *new string(sha256(msg));
+                string hashedPassword = *new string(Crypto::sha256(msg));
                 Request r2 = Request(hashedPassword.c_str());
 
                 if (r2.send(sd) <= 0) {
