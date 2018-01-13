@@ -24,3 +24,6 @@ add_executable(server
         server.cpp
         token.h
         tree.h)
+
+add_executable(XML
+        XMLCreate.cpp)

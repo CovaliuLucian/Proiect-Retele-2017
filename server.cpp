@@ -160,6 +160,7 @@ int main() {
 
         pthread_create(&th[i], NULL, &treat, td);
     }//while
+    XMLPlatformUtils::Terminate();
 };
 
 static void *treat(void *arg) {
