@@ -1,16 +1,5 @@
-/* servTCPCSel.c - Exemplu de server TCP concurent 
-   
-   Asteapta un "nume" de la clienti multipli si intoarce clientilor sirul
-   "Hello nume" corespunzator; multiplexarea intrarilor se realizeaza cu select().
-   
-   Cod sursa preluat din [Retele de Calculatoare,S.Buraga & G.Ciobanu, 2003] si modificat de 
-   Lenuta Alboaie  <adria@infoiasi.ro> (c)2009
-   
-*/
-
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <sys/time.h>
 #include <netinet/in.h>
 #include <unistd.h>
 #include <cerrno>
@@ -23,8 +12,6 @@
 #include "response.h"
 #include "request.h"
 #include "parsing.h"
-#include "token.h"
-#include "tree.h"
 #include "DataBase.h"
 
 #include <openssl/bio.h>
@@ -32,8 +19,6 @@
 #include <openssl/err.h>
 #include <openssl/sha.h>
 
-
-#include <sqlite3.h>
 
 #include <iostream>
 

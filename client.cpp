@@ -1,9 +1,3 @@
-/* cliTCP.c - Exemplu de client TCP 
-   Trimite un nume la server; primeste de la server "Hello nume".
-         
-   Autor: Lenuta Alboaie  <adria@infoiasi.ro> (c)2009
-
-*/
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
