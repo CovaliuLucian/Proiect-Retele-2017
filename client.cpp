@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
         return errno;
     }
 
-    bool loggedIn = false;
+    bool loggedIn = false, admin = false;
 
     while (true) {
 
@@ -103,6 +103,10 @@ int main(int argc, char *argv[]) {
             read(0, msg, 100);
 
             Request r = Request(msg);
+            if (r.getRequest() == "Admin\n")
+                admin = true;
+            else
+                admin = false;
 
             if (r.send(sd) <= 0) {
                 perror("[client]Eroare la write() spre server.\n");
@@ -120,8 +124,8 @@ int main(int argc, char *argv[]) {
                 printf("Password: ");
                 fflush(stdout);
                 read(0, msg, 100);
-                if(msg[strlen(msg)-1] == '\n')
-                    msg[strlen(msg)-1] = '\0';
+                if (msg[strlen(msg) - 1] == '\n')
+                    msg[strlen(msg) - 1] = '\0';
 
                 string hashedPassword = *new string(Crypto::sha256(msg));
                 Request r2 = Request(hashedPassword.c_str());
@@ -165,7 +169,22 @@ int main(int argc, char *argv[]) {
 
         if (r.getRequest() == "exit\n" || r.getRequest() == "Exit\n")
             break;
-
+        if ((r.getRequest() == "create\n" || r.getRequest() == "Create\n") && admin)
+        {
+            Response res = readResponse(sd);
+            while (res.getCode() != 101) {
+                cout << res.getMessage();
+                cout.flush();
+                bzero(msg, 100);
+                read(0, msg, 100);
+                Request req = Request(msg);
+                req.send(sd);
+                res = readResponse(sd);
+            }
+            cout << res.getMessage();
+            cout.flush();
+            continue;
+        }
 
         Response res = readResponse(sd);
         while (res.getCode() != 101) {

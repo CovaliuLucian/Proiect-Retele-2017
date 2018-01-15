@@ -32,7 +32,6 @@ DataBase db;
 #define PORT 2728
 
 
-
 Request readRequest(int sd) {
     char serialized[200];
     int length;
@@ -74,7 +73,7 @@ int main() {
     pthread_t th[100];    //Identificatorii thread-urilor care se vor crea
     int i = 0;
 
-    if(!db.Prepare("SSH")) return 0;
+    if (!db.Prepare("SSH")) return 0;
 
 
     /* crearea unui socket */
@@ -163,10 +162,9 @@ void raspunde(void *arg) {
     Response res;     //mesaj de raspuns pentru client
     bool loggedIn = false, admin = false;
 
-    while(!loggedIn)
-    {
+    while (!loggedIn) {
         r = readRequest(fd);
-        if(!r.getStatus())
+        if (!r.getStatus())
             break;
 
         cout << "[server]Mesajul a fost receptionat..." << r.getRequest() << endl;
@@ -176,8 +174,7 @@ void raspunde(void *arg) {
         }
 
 
-        if(db.CheckAccount(r.getRequest()))
-        {
+        if (db.CheckAccount(r.getRequest())) {
             string name = r.getRequest();
 
             res.setMessage("Account iz good");
@@ -186,7 +183,7 @@ void raspunde(void *arg) {
             res.send(fd);
 
             r = readRequest(fd);
-            if(!r.getStatus())
+            if (!r.getStatus())
                 break;
 
             cout << "[server]Mesajul a fost receptionat..." << r.getRequest() << endl;
@@ -195,50 +192,102 @@ void raspunde(void *arg) {
                 break;
             }
 
-            if(db.CheckAccount(name,r.getRequest()))
-            {
+            if (db.CheckAccount(name, r.getRequest())) {
                 loggedIn = true;
-                if(name == "Admin")
+                if (name == "Admin")
                     admin = true;
             }
-        } else
-        {
+        } else {
             res.setMessage("Account name not found");
             res.setCode(202);
             res.send(fd);
         }
 
         res.setMessage("Done");
-        if(loggedIn)
+        if (loggedIn)
             res.setCode(101);
-        else
-        {
+        else {
             res.setMessage("Not logged in");
             res.setCode(201);
         }
 
         cout << "[server]Trimitem mesajul inapoi..." << res.getMessage() << endl;
 
-        res.send(fd);
+        if (res.send(fd) == 0)
+            break;
     }
+
+    if (!loggedIn)
+        return;
 
     while (true) {
 
         r = readRequest(fd);
-        if(!r.getStatus())
+        if (!r.getStatus())
             break;
 
         cout << "[server]Mesajul a fost receptionat..." << r.getRequest() << endl;
 
         if (r.getRequest() == "exit" || r.getRequest() == "Exit") {
             break;
-        }
+        } else if ((r.getRequest() == "create" || r.getRequest() == "Create") && admin) {
 
-        try {
-            Parser::Parse(r.getRequest(), fd);//STDIN_FILENO);
-        }
-        catch (string &m) {
-            cout << "Error: " << m << "\n";
+            res.setMessage("Name: ");
+            res.setCode(100);
+            res.send(fd);
+            r=readRequest(fd);
+            while(db.CheckAccount(r.getRequest()) || r.getRequest().empty())
+            {
+                res.setMessage("Name invalid or taken, try again: ");
+                res.setCode(100);
+                res.send(fd);
+                r=readRequest(fd);
+            }
+            string name = r.getRequest();
+
+            res.setMessage("Password: ");
+            res.setCode(100);
+            res.send(fd);
+            r=readRequest(fd);
+            while(r.getRequest().empty())
+            {
+                res.setMessage("Not empty please, try again: ");
+                res.setCode(100);
+                res.send(fd);
+                r=readRequest(fd);
+            }
+
+            string password = r.getRequest();
+            if (db.AddAccount(name,password,false))
+            {
+                res.setMessage("Account added.\n");
+                res.setCode(101);
+            } else
+            {
+                res.setMessage("Error adding account.");
+                res.setCode(204);
+            }
+            res.send(fd);
+            continue;
+
+
+        } else if (r.getRequest() == "help" || r.getRequest() == "Help") {
+            string toSend = string("");
+            if (admin)
+                toSend += "Create to create a new account.\n";
+            toSend += "Help to get this message.\n";
+            toSend += "Exit to exit the client.\n";
+            res.setMessage(toSend);
+            res.setCode(100);
+            res.send(fd);
+        } else
+        {
+            try {
+                Parser::Parse(r.getRequest(), fd);//STDIN_FILENO);
+            }
+            catch (string &m) {
+                cout << "Error: " << m << "\n";
+            }
         }
 
 
