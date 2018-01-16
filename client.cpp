@@ -111,6 +111,7 @@ int main(int argc, char *argv[]) {
     SSL_set_fd(ssl,sd);
     if(SSL_connect(ssl) != 1)
     {
+        ERR_print_errors_fp(stderr);
         cerr << "Error connecting to secured server";
         SSL_free(ssl);
         SSL_CTX_free(ctx);

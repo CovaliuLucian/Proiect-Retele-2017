@@ -74,7 +74,7 @@ bool Security()
     OpenSSL_add_all_algorithms();
     ERR_load_BIO_strings();
 
-    const SSL_METHOD *method = SSLv3_client_method();
+    const SSL_METHOD *method = SSLv3_method();
     ctx = SSL_CTX_new(method);
     if(ctx == nullptr)
     {
@@ -185,7 +185,7 @@ int main() {
         if(SSL_accept(ssl)!=1)
         {
             ERR_print_errors_fp(stderr);
-            cerr << "Error accepting secured connection";
+            cerr << "Error accepting secured connection: ";
             continue;
         }
         //SSL_set_accept_state(ssl);
