@@ -7,6 +7,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <openssl/bio.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 
 using namespace std;
 
@@ -35,20 +38,20 @@ class Request
         return request;
     }
 
-    int send(int sd)
+    int send(SSL* ssl)
     {
         int status;
         string test = getRequest();
         const char *serialized = test.c_str();
         int len = (int)getRequest().length();
 
-        status = write(sd, &len, sizeof len);
+        status = SSL_write(ssl, &len, sizeof len);
         if (status < 0)
         {
             // error
         }
 
-        status = write(sd, serialized, len);
+        status = SSL_write(ssl, serialized, len);
         if (status < 0)
         {
             // error

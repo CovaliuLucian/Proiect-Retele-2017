@@ -27,17 +27,17 @@ using namespace std;
 /* portul de conectare la server*/
 int port;
 
-Response readResponse(int sd) {
+Response readResponse(SSL* ssl) {
     int sizeRes;
     Response resp;
     char serialized[10000];
 
-    if (read(sd, &sizeRes, sizeof sizeRes) < 0) {
+    if (SSL_read(ssl, &sizeRes, sizeof sizeRes) < 0) {
         resp.setMessage("Eroare la read() de la server.\n");
         resp.setCode(201);
     }
 
-    if (read(sd, serialized, sizeRes) < 0) {
+    if (SSL_read(ssl, serialized, sizeRes) < 0) {
         resp.setMessage("Eroare la read() de la server.\n");
         resp.setCode(202);
     }
@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
     }
 
     SSL_set_fd(ssl,sd);
-    if(SSL_connect(ssl) < 0)
+    if(SSL_connect(ssl) != 1)
     {
         cerr << "Error connecting to secured server";
         SSL_free(ssl);
@@ -117,6 +117,7 @@ int main(int argc, char *argv[]) {
         close(sd);
         return -3;
     }
+    //SSL_set_connect_state(ssl);
 
     bool loggedIn = false, admin = false;
 
@@ -135,7 +136,7 @@ int main(int argc, char *argv[]) {
             else
                 admin = false;
 
-            if (r.send(sd) <= 0) {
+            if (r.send(ssl) <= 0) {
                 perror("[client]Eroare la write() spre server.\n");
                 return errno;
             }
@@ -143,7 +144,7 @@ int main(int argc, char *argv[]) {
             if (r.getRequest() == "exit\n" || r.getRequest() == "Exit\n")
                 break;
 
-            Response res = readResponse(sd);
+            Response res = readResponse(ssl);
 
             if (res.getCode() == 103) // name is correct
             {
@@ -157,7 +158,7 @@ int main(int argc, char *argv[]) {
                 string hashedPassword = *new string(Crypto::sha256(msg));
                 Request r2 = Request(hashedPassword.c_str());
 
-                if (r2.send(sd) <= 0) {
+                if (r2.send(ssl) <= 0) {
                     perror("[client]Eroare la write() spre server.\n");
                     return errno;
                 }
@@ -167,7 +168,7 @@ int main(int argc, char *argv[]) {
             } else if (res.getCode() == 202) {
                 printf("This account does not exist.\n");
             }
-            res = readResponse(sd);
+            res = readResponse(ssl);
             if (res.getCode() == 101) {
                 printf("Succes.\n");
                 loggedIn = true;
@@ -189,7 +190,7 @@ int main(int argc, char *argv[]) {
         cout.flush();
 
 
-        if (r.send(sd) <= 0) {
+        if (r.send(ssl) <= 0) {
             perror("[client]Eroare la write() spre server.\n");
             return errno;
         }
@@ -198,25 +199,25 @@ int main(int argc, char *argv[]) {
             break;
         if ((r.getRequest() == "create\n" || r.getRequest() == "Create\n") && admin)
         {
-            Response res = readResponse(sd);
+            Response res = readResponse(ssl);
             while (res.getCode() != 101) {
                 cout << res.getMessage();
                 cout.flush();
                 bzero(msg, 100);
                 read(0, msg, 100);
                 Request req = Request(msg);
-                req.send(sd);
-                res = readResponse(sd);
+                req.send(ssl);
+                res = readResponse(ssl);
             }
             cout << res.getMessage();
             cout.flush();
             continue;
         }
 
-        Response res = readResponse(sd);
+        Response res = readResponse(ssl);
         while (res.getCode() != 101) {
             cout << "[client]Mesajul primit este: \n" << res.getMessage() << endl;
-            res = readResponse(sd);
+            res = readResponse(ssl);
         }
     }
     /* inchidem conexiunea, am terminat */

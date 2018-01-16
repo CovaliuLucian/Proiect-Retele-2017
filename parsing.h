@@ -18,13 +18,16 @@
 #include <list>
 #include <iostream>
 #include <utility>
+#include <openssl/bio.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 
 using namespace std;
 
 class Parser {
 public:
-    void static Parse(const string &input, int sd) {
-        Execute(GenerateTree(SYA(ParsePrep(input))), sd, -1, -1);
+    void static Parse(const string &input, SSL* ssl) {
+        Execute(GenerateTree(SYA(ParsePrep(input))), ssl, -1, -1);
     }
 
 public: // to private
@@ -198,7 +201,7 @@ public: // to private
         return last;
     }
 
-    bool static Execute(Tree *input, int sd, int redirectOut, int redirectErr) {
+    bool static Execute(Tree *input, SSL* ssl, int redirectOut, int redirectErr) {
 
         if (input->token.getType() == "Operand" && input->left == nullptr && input->right == nullptr) {
 
@@ -244,7 +247,7 @@ public: // to private
                 Response res;
                 res.setCode(100);
                 res.setMessage(string(output));
-                res.send(sd);
+                res.send(ssl);
 
                 return status;
 
@@ -299,25 +302,25 @@ public: // to private
         } else if (input->token.getType() == "Operator" && input->left != nullptr && input->right != nullptr) {
             bool status = true;
             if (input->token.command == "&&") {
-                bool leftResult = Execute(input->left, sd, redirectOut, redirectErr), rightResult;
+                bool leftResult = Execute(input->left, ssl, redirectOut, redirectErr), rightResult;
                 if (leftResult) {
-                    rightResult = Execute(input->right, sd, redirectOut, redirectErr);
+                    rightResult = Execute(input->right, ssl, redirectOut, redirectErr);
                     status = leftResult && rightResult;
                 } else
                     status = false;
                 return status;
             }
             if (input->token.command == "||") {
-                bool leftResult = Execute(input->left, sd, redirectOut, redirectErr), rightResult;
+                bool leftResult = Execute(input->left, ssl, redirectOut, redirectErr), rightResult;
                 if (!leftResult) {
-                    rightResult = Execute(input->right, sd, redirectOut, redirectErr);
+                    rightResult = Execute(input->right, ssl, redirectOut, redirectErr);
                     status = leftResult || rightResult;
                 }
                 return status;
             }
             if (input->token.command == ";") {
-                bool leftResult = Execute(input->left, sd, redirectOut, redirectErr), rightResult = Execute(
-                        input->right, sd, redirectOut, redirectErr);
+                bool leftResult = Execute(input->left, ssl, redirectOut, redirectErr), rightResult = Execute(
+                        input->right, ssl, redirectOut, redirectErr);
                 status = leftResult || rightResult;
                 return status;
             }
@@ -327,7 +330,7 @@ public: // to private
                     perror(nullptr);
                 if (fchmod(fileD, permission) < 0)
                     perror(nullptr);
-                bool leftResult = Execute(input->left, sd, fileD, redirectErr);
+                bool leftResult = Execute(input->left, ssl, fileD, redirectErr);
                 return leftResult;
             }
 
@@ -337,7 +340,7 @@ public: // to private
                     perror(nullptr);
                 if (fchmod(fileD, permission) < 0)
                     perror(nullptr);
-                bool leftResult = Execute(input->left, sd, redirectOut, fileD);
+                bool leftResult = Execute(input->left, ssl, redirectOut, fileD);
                 close(fileD);
                 return leftResult;
             }
@@ -347,9 +350,9 @@ public: // to private
                     perror(nullptr);
                 if (fchmod(fileD, permission) < 0)
                     perror(nullptr);
-                bool leftResult = Execute(input->left, sd, fileD, fileD);
+                bool leftResult = Execute(input->left, ssl, fileD, fileD);
                 input->right->token.command += " redirect";
-                bool rightResult = Execute(input->right, sd, redirectOut, redirectErr);
+                bool rightResult = Execute(input->right, ssl, redirectOut, redirectErr);
                 if (remove("redirect") < 0)
                     perror(nullptr);
                 close(fileD);
@@ -362,14 +365,14 @@ public: // to private
                 if (fchmod(fileD, permission) < 0)
                     perror(nullptr);
                 input->right->token.command += " " + input->left->token.command;
-                bool rightResult = Execute(input->right, sd, redirectOut, redirectErr);
+                bool rightResult = Execute(input->right, ssl, redirectOut, redirectErr);
                 return rightResult;
             }
 
             // should't get here
             throw "Invalid expression around " + input->token.command + "\nNot an operator";
         } else if (input->token.command == ";" && input->left != nullptr && input->right == nullptr) {
-            return Execute(input->left, sd, redirectOut, redirectErr);
+            return Execute(input->left, ssl, redirectOut, redirectErr);
         }
 
         throw "Invalid expression around " + input->token.command + "\nUnsupported";

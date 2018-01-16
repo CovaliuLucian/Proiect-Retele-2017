@@ -6,6 +6,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <openssl/bio.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <iostream>
 
 using namespace std;
 
@@ -43,7 +47,7 @@ class Response
     {
         message = string(m);
     }
-    int send(int sd)
+    int send(SSL* ssl)
     {
         char code[4];
         sprintf(code, "%i", getCode());
@@ -51,15 +55,15 @@ class Response
         const char *serialized = serializedString.c_str();
         size_t sizeRes = strlen(serialized);
 
-        if (write(sd, &sizeRes, sizeof(int)) < 0)
+        if (SSL_write(ssl, &sizeRes, sizeof(int)) < 0)
         {
-            perror("[server] Eroare la write() catre client.\n");
+            cerr << "Eroare la write() catre client.\n";
             return 0;
         }
 
-        if (write(sd, serialized, sizeRes) < 0)
+        if (SSL_write(ssl, serialized, sizeRes) < 0)
         {
-            perror("[server] Eroare la write() catre client.\n");
+            cerr << "Eroare la write() catre client.\n";
             return 0;
         }
         return 1;

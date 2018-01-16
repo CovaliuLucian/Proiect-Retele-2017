@@ -33,19 +33,21 @@ SSL_CTX *ctx;
 #define PORT 2728
 
 
-Request readRequest(int sd) {
+Request readRequest(SSL* ssl) {
     char serialized[200];
     int length;
-    long status = read(sd, &length, sizeof length);
+    long status = SSL_read(ssl, &length, sizeof length);
     if (status < 0) {
         perror("Eroare la read() de la client.\n");
+        ERR_print_errors_fp(stderr);
         Request err;
         err.setStatus(false);
         return err;
     }
-    long bytes = read(sd, serialized, length);
+    long bytes = SSL_read(ssl, serialized, length);
     if (length != bytes || bytes < 0) {
         perror("Eroare la read() de la client.\n");
+        ERR_print_errors_fp(stderr);
         Request err;
         err.setStatus(false);
         return err;
@@ -60,6 +62,7 @@ Request readRequest(int sd) {
 typedef struct thData {
     int idThread; //id-ul thread-ului tinut in evidenta de acest program
     int cl; //descriptorul intors de accept
+    SSL* ssl;
 } thData;
 
 static void *treat(void *); /* functia executata de fiecare thread ce realizeaza comunicarea cu clientii */
@@ -96,6 +99,17 @@ bool Security()
     return true;
 }
 
+bool getSSL(SSL*& ssl)
+{
+    ssl = SSL_new(ctx);
+    if(ssl == nullptr)
+    {
+        ERR_print_errors_fp(stderr);
+        return false;
+    }
+    return true;
+}
+
 int main() {
     struct sockaddr_in server;    // structura folosita de server
     struct sockaddr_in from;
@@ -107,6 +121,8 @@ int main() {
 
     if (!db.Prepare("SSH")) return 0;
 
+    SSL* ssl;
+
     if (!Security()) return 0;
 
 
@@ -115,6 +131,7 @@ int main() {
         perror("[server]Eroare la socket().\n");
         return errno;
     }
+
     /* utilizarea optiunii SO_REUSEADDR */
     int on = 1;
     setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
@@ -145,11 +162,17 @@ int main() {
     /* servim in mod concurent clientii...folosind thread-uri */
     bool run = true;
     while (run) {
+        if(getSSL(ssl) < 0)
+        {
+            ERR_print_errors_fp(stderr);
+            cerr << "Error creating SSL struct";
+            continue;
+        }
         int client;
         thData *td; //parametru functia executata de thread
         socklen_t length = sizeof(from);
 
-        printf("[server]Asteptam la portul %d...\n", PORT);
+        printf("\n[server]Asteptam la portul %d...\n", PORT);
         fflush(stdout);
 
         //client= malloc(sizeof(int));
@@ -158,6 +181,14 @@ int main() {
             perror("[server]Eroare la accept().\n");
             continue;
         }
+        SSL_set_fd(ssl, client);
+        if(SSL_accept(ssl)!=1)
+        {
+            ERR_print_errors_fp(stderr);
+            cerr << "Error accepting secured connection";
+            continue;
+        }
+        //SSL_set_accept_state(ssl);
 
         /* s-a realizat conexiunea, se astepta mesajul */
 
@@ -167,6 +198,7 @@ int main() {
         td = (struct thData *) malloc(sizeof(struct thData));
         td->idThread = i++;
         td->cl = client;
+        td->ssl = ssl;
 
         pthread_create(&th[i], NULL, &treat, td);
     }//while
@@ -195,9 +227,10 @@ void raspunde(void *arg) {
     Request r;        //mesajul primit de la client
     Response res;     //mesaj de raspuns pentru client
     bool loggedIn = false, admin = false;
+    SSL* ssl = tdL.ssl;
 
     while (!loggedIn) {
-        r = readRequest(fd);
+        r = readRequest(ssl);
         if (!r.getStatus())
             break;
 
@@ -214,9 +247,9 @@ void raspunde(void *arg) {
             res.setMessage("Account iz good");
             res.setCode(103);
 
-            res.send(fd);
+            res.send(ssl);
 
-            r = readRequest(fd);
+            r = readRequest(ssl);
             if (!r.getStatus())
                 break;
 
@@ -234,7 +267,7 @@ void raspunde(void *arg) {
         } else {
             res.setMessage("Account name not found");
             res.setCode(202);
-            res.send(fd);
+            res.send(ssl);
         }
 
         res.setMessage("Done");
@@ -247,7 +280,7 @@ void raspunde(void *arg) {
 
         cout << "[server]Trimitem mesajul inapoi..." << res.getMessage() << endl;
 
-        if (res.send(fd) == 0)
+        if (res.send(ssl) == 0)
             break;
     }
 
@@ -256,7 +289,7 @@ void raspunde(void *arg) {
 
     while (true) {
 
-        r = readRequest(fd);
+        r = readRequest(ssl);
         if (!r.getStatus())
             break;
 
@@ -268,27 +301,27 @@ void raspunde(void *arg) {
 
             res.setMessage("Name: ");
             res.setCode(100);
-            res.send(fd);
-            r=readRequest(fd);
+            res.send(ssl);
+            r=readRequest(ssl);
             while(db.CheckAccount(r.getRequest()) || r.getRequest().empty())
             {
                 res.setMessage("Name invalid or taken, try again: ");
                 res.setCode(100);
-                res.send(fd);
-                r=readRequest(fd);
+                res.send(ssl);
+                r=readRequest(ssl);
             }
             string name = r.getRequest();
 
             res.setMessage("Password: ");
             res.setCode(100);
-            res.send(fd);
-            r=readRequest(fd);
+            res.send(ssl);
+            r=readRequest(ssl);
             while(r.getRequest().empty())
             {
                 res.setMessage("Not empty please, try again: ");
                 res.setCode(100);
-                res.send(fd);
-                r=readRequest(fd);
+                res.send(ssl);
+                r=readRequest(ssl);
             }
 
             string password = r.getRequest();
@@ -301,7 +334,7 @@ void raspunde(void *arg) {
                 res.setMessage("Error adding account.");
                 res.setCode(204);
             }
-            res.send(fd);
+            res.send(ssl);
             continue;
 
 
@@ -313,11 +346,11 @@ void raspunde(void *arg) {
             toSend += "Exit to exit the client.\n";
             res.setMessage(toSend);
             res.setCode(100);
-            res.send(fd);
+            res.send(ssl);
         } else
         {
             try {
-                Parser::Parse(r.getRequest(), fd);//STDIN_FILENO);
+                Parser::Parse(r.getRequest(), ssl);//STDIN_FILENO);
             }
             catch (string &m) {
                 cout << "Error: " << m << "\n";
@@ -330,7 +363,7 @@ void raspunde(void *arg) {
 
         cout << "[server]Trimitem mesajul inapoi..." << res.getMessage() << endl;
 
-        res.send(fd);
+        res.send(ssl);
     }
 
     //return;
