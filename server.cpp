@@ -26,6 +26,7 @@
 using namespace std;
 
 DataBase db;
+SSL_CTX *ctx;
 
 /* portul folosit */
 
@@ -63,6 +64,37 @@ typedef struct thData {
 
 static void *treat(void *); /* functia executata de fiecare thread ce realizeaza comunicarea cu clientii */
 void raspunde(void *arg);
+bool Security()
+{
+    SSL_library_init();
+    SSL_load_error_strings();
+    OpenSSL_add_all_algorithms();
+    ERR_load_BIO_strings();
+
+    const SSL_METHOD *method = SSLv3_client_method();
+    ctx = SSL_CTX_new(method);
+    if(ctx == nullptr)
+    {
+        ERR_print_errors_fp(stderr);
+        return false;
+    }
+    if(SSL_CTX_use_certificate_file(ctx,"../cert.pem",SSL_FILETYPE_PEM) <= 0)
+    {
+        ERR_print_errors_fp(stderr);
+        return false;
+    }
+    if(SSL_CTX_use_PrivateKey_file(ctx,"../cert.pem",SSL_FILETYPE_PEM) <= 0)
+    {
+        ERR_print_errors_fp(stderr);
+        return false;
+    }
+    if(!SSL_CTX_check_private_key(ctx))
+    {
+        ERR_print_errors_fp(stderr);
+        return false;
+    }
+    return true;
+}
 
 int main() {
     struct sockaddr_in server;    // structura folosita de server
@@ -74,6 +106,8 @@ int main() {
     int i = 0;
 
     if (!db.Prepare("SSH")) return 0;
+
+    if (!Security()) return 0;
 
 
     /* crearea unui socket */

@@ -50,12 +50,29 @@ Response readResponse(int sd) {
     return toReturn;
 }
 
+
 int main(int argc, char *argv[]) {
 
-    // SSL_library_init();
-    // SSL_load_error_strings();
+    SSL_library_init();
+    SSL_load_error_strings();
 
 
+    const SSL_METHOD *method = SSLv3_client_method();
+    SSL_CTX *ctx = SSL_CTX_new(method);
+    if(ctx == nullptr)
+    {
+        cerr << "Error creating context";
+        return -1;
+    }
+
+    SSL* ssl = SSL_new(ctx);
+
+    if(ssl == nullptr)
+    {
+        cerr << "Error creating SSL structure";
+        SSL_CTX_free(ctx);
+        return -2;
+    }
 
 
     int sd;                    // descriptorul de socket
@@ -89,6 +106,16 @@ int main(int argc, char *argv[]) {
     if (connect(sd, (struct sockaddr *) &server, sizeof(struct sockaddr)) == -1) {
         perror("[client]Eroare la connect().\n");
         return errno;
+    }
+
+    SSL_set_fd(ssl,sd);
+    if(SSL_connect(ssl) < 0)
+    {
+        cerr << "Error connecting to secured server";
+        SSL_free(ssl);
+        SSL_CTX_free(ctx);
+        close(sd);
+        return -3;
     }
 
     bool loggedIn = false, admin = false;
