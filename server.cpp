@@ -13,6 +13,7 @@
 #include "request.h"
 #include "parsing.h"
 #include "DataBase.h"
+#include "Crypto.h"
 
 #include <openssl/bio.h>
 #include <openssl/ssl.h>
@@ -247,7 +248,8 @@ void raspunde(void *arg) {
             res.setMessage("Account iz good");
             res.setCode(103);
 
-            res.send(ssl);
+            if(res.send(ssl) <= 0)
+                break;
 
             r = readRequest(ssl);
             if (!r.getStatus())
@@ -267,7 +269,8 @@ void raspunde(void *arg) {
         } else {
             res.setMessage("Account name not found");
             res.setCode(202);
-            res.send(ssl);
+            if(res.send(ssl) < 0)
+                break;
         }
 
         res.setMessage("Done");
@@ -307,24 +310,33 @@ void raspunde(void *arg) {
             {
                 res.setMessage("Name invalid or taken, try again: ");
                 res.setCode(100);
-                res.send(ssl);
+                if(res.send(ssl) <= 0)
+                    break;
                 r=readRequest(ssl);
             }
             string name = r.getRequest();
 
             res.setMessage("Password: ");
             res.setCode(100);
-            res.send(ssl);
+            if(res.send(ssl) <= 0)
+                break;
             r=readRequest(ssl);
+            if(!r.getStatus())
+                break;
             while(r.getRequest().empty())
             {
                 res.setMessage("Not empty please, try again: ");
                 res.setCode(100);
-                res.send(ssl);
+                if(res.send(ssl) <= 0)
+                    break;
                 r=readRequest(ssl);
+                if (!r.getStatus())
+                    break;
             }
 
             string password = r.getRequest();
+            if (!r.getStatus() || r.getRequest() == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+                break; // if hash of ""
             if (db.AddAccount(name,password,false))
             {
                 res.setMessage("Account added.\n");
@@ -334,7 +346,8 @@ void raspunde(void *arg) {
                 res.setMessage("Error adding account.");
                 res.setCode(204);
             }
-            res.send(ssl);
+            if(res.send(ssl) <= 0)
+                break;
             continue;
 
 
@@ -346,7 +359,8 @@ void raspunde(void *arg) {
             toSend += "Exit to exit the client.\n";
             res.setMessage(toSend);
             res.setCode(100);
-            res.send(ssl);
+            if(res.send(ssl) <= 0)
+                break;
         } else
         {
             try {

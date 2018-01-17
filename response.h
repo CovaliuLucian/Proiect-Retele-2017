@@ -57,12 +57,14 @@ class Response
 
         if (SSL_write(ssl, &sizeRes, sizeof(int)) < 0)
         {
+            ERR_print_errors_fp(stderr);
             cerr << "Eroare la write() catre client.\n";
             return 0;
         }
 
         if (SSL_write(ssl, serialized, sizeRes) < 0)
         {
+            ERR_print_errors_fp(stderr);
             cerr << "Eroare la write() catre client.\n";
             return 0;
         }

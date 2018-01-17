@@ -10,6 +10,7 @@
 #include <openssl/bio.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#include <iostream>
 
 using namespace std;
 
@@ -48,13 +49,17 @@ class Request
         status = SSL_write(ssl, &len, sizeof len);
         if (status < 0)
         {
-            // error
+            ERR_print_errors_fp(stderr);
+            cerr << "Eroare la write() catre client.\n";
+            return 0;
         }
 
         status = SSL_write(ssl, serialized, len);
         if (status < 0)
         {
-            // error
+            ERR_print_errors_fp(stderr);
+            cerr << "Eroare la write() catre client.\n";
+            return 0;
         }
         return status;
     }

@@ -179,9 +179,12 @@ int main(int argc, char *argv[]) {
             }
         }
 
+        if(!loggedIn)
+            return 0;
+
 
         bzero(msg, 100);
-        printf("[client]Introduceti comanda: ");
+        printf("\nIntroduceti comanda: ");
         fflush(stdout);
         read(0, msg, 100);
 
@@ -201,7 +204,7 @@ int main(int argc, char *argv[]) {
         if ((r.getRequest() == "create\n" || r.getRequest() == "Create\n") && admin)
         {
             Response res = readResponse(ssl);
-            while (res.getCode() != 101) {
+            while (res.getCode() != 101 && res.getCode() != 204) {
                 cout << res.getMessage();
                 cout.flush();
                 bzero(msg, 100);
