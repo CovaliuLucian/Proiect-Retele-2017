@@ -65,20 +65,22 @@ public: // to private
         while (i != input.size()) {
             string op = input.substr(i, 2);
 
+            int pr = -1;
+
             if (op == "&&" || op == "||" || op == "2>") {
-                Operand newOp = *new Operand(Trim(input.substr(last, i - last)), op == "2>" ? 1 : 0);
+                Operand newOp = *new Operand(Trim(input.substr(last, i - last)));
                 if (newOp.command != " " && !newOp.command.empty())
                     toReturn.push(newOp);
-                toReturn.push(Operator(op));
+                toReturn.push(Operator(op, op == "2>" ? 1 : 0));
                 i++;
                 last = i + 1;
             } else {
                 op = input.substr(i, 1);
                 if (op == "|" || op == ";" || op == "(" || op == ")" || op == ">" || op == "<") {
-                    Operand newOp = *new Operand(Trim(input.substr(last, i - last)), op == ">" || op == "<" ? 1 : 0);
+                    Operand newOp = *new Operand(Trim(input.substr(last, i - last)));
                     if (newOp.command != " " && !newOp.command.empty())
                         toReturn.push(newOp);
-                    toReturn.push(Operator(op));
+                    toReturn.push(Operator(op, op == ">" || op == "<" ? 1 : 0));
                     last = i + 1;
                 }
             }
@@ -118,7 +120,8 @@ public: // to private
     // 		pop the operator onto the output queue.
     // exit.
     queue<Token> static SYA(queue<Token> input) {
-        queue<Token> toReturn = queue<Token>(), operatorStack = queue<Token>();
+        queue<Token> toReturn = queue<Token>();
+        stack<Token> operatorStack = stack<Token>();
 
         while (!input.empty()) {
             Token current = input.front();
@@ -126,9 +129,9 @@ public: // to private
                 toReturn.push(current);
 
             if (current.getType() == "Operator" && current.command != "(" && current.command != ")") {
-                while (!operatorStack.empty() && operatorStack.front().priority >= current.priority &&
-                       operatorStack.front().command != "(") {
-                    toReturn.push(operatorStack.front());
+                while (!operatorStack.empty() && operatorStack.top().priority >= current.priority &&
+                       operatorStack.top().command != "(") {
+                    toReturn.push(operatorStack.top());
                     operatorStack.pop();
                 }
                 operatorStack.push(current);
@@ -138,8 +141,8 @@ public: // to private
                 operatorStack.push(current);
 
             if (current.command == ")") {
-                while (operatorStack.front().command != "(" && !operatorStack.empty()) {
-                    toReturn.push(operatorStack.front());
+                while (operatorStack.top().command != "(" && !operatorStack.empty()) {
+                    toReturn.push(operatorStack.top());
                     operatorStack.pop();
                 }
                 if (operatorStack.empty()) {
@@ -152,9 +155,9 @@ public: // to private
             input.pop();
         }
         while (!operatorStack.empty()) {
-            if (operatorStack.front().command == "(" || operatorStack.front().command == ")")
+            if (operatorStack.top().command == "(" || operatorStack.top().command == ")")
                 throw "Mismatched parantheses";
-            toReturn.push(operatorStack.front());
+            toReturn.push(operatorStack.top());
             operatorStack.pop();
         }
         return toReturn;
