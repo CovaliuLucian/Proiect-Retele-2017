@@ -1,0 +1,57 @@
+\hypertarget{classParser}{\section{Parser Class Reference}
+\label{classParser}\index{Parser@{Parser}}
+}
+\subsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classParser_a1622dd8a55a1c87346f8bae8841872ff}{static void {\bfseries Parse} (const string \&input, S\-S\-L $\ast$ssl)}\label{classParser_a1622dd8a55a1c87346f8bae8841872ff}
+
+\item 
+\hypertarget{classParser_a98223ac81cb65d86b901a9218e25bf57}{static string {\bfseries Trim\-Left} (string input)}\label{classParser_a98223ac81cb65d86b901a9218e25bf57}
+
+\item 
+\hypertarget{classParser_a2252f0fb8a66f55c124e6c6b2ca3f4bb}{static string {\bfseries Trim\-Right} (string input)}\label{classParser_a2252f0fb8a66f55c124e6c6b2ca3f4bb}
+
+\item 
+\hypertarget{classParser_a91a0ce28c8cc4f6fb5f6c24998758c95}{static string {\bfseries Trim} (string input)}\label{classParser_a91a0ce28c8cc4f6fb5f6c24998758c95}
+
+\item 
+\hypertarget{classParser_a85d99169d8498e1a9dcfd12331dac704}{static queue$<$ \hyperlink{classToken}{Token} $>$ {\bfseries Parse\-Prep} (const char $\ast$input)}\label{classParser_a85d99169d8498e1a9dcfd12331dac704}
+
+\item 
+\hypertarget{classParser_a58555d8ba0b62bd7b2bac2a7362d3a84}{static queue$<$ \hyperlink{classToken}{Token} $>$ {\bfseries Parse\-Prep} (const string \&input)}\label{classParser_a58555d8ba0b62bd7b2bac2a7362d3a84}
+
+\item 
+\hypertarget{classParser_abd17d1337e3b897df5e5707619c147db}{static queue$<$ \hyperlink{classToken}{Token} $>$ {\bfseries S\-Y\-A} (queue$<$ \hyperlink{classToken}{Token} $>$ input)}\label{classParser_abd17d1337e3b897df5e5707619c147db}
+
+\item 
+\hypertarget{classParser_abb030ab55697459ff435369a28f7afcc}{static \hyperlink{classTree}{Tree} $\ast$ {\bfseries Generate\-Tree} (queue$<$ \hyperlink{classToken}{Token} $>$ input)}\label{classParser_abb030ab55697459ff435369a28f7afcc}
+
+\item 
+\hypertarget{classParser_ae75fb3c91b46f693337665a6031a8103}{static bool {\bfseries Execute} (\hyperlink{classTree}{Tree} $\ast$input, S\-S\-L $\ast$ssl, int redirect\-Out, int redirect\-Err)}\label{classParser_ae75fb3c91b46f693337665a6031a8103}
+
+\end{DoxyCompactItemize}
+\subsection*{Static Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classParser_a8f85c6ebdc3937e218696884ed03533c}{static const int {\bfseries open\-Modes} = O\-\_\-\-W\-R\-O\-N\-L\-Y $\vert$ O\-\_\-\-C\-R\-E\-A\-T $\vert$ O\-\_\-\-T\-R\-U\-N\-C}\label{classParser_a8f85c6ebdc3937e218696884ed03533c}
+
+\item 
+static const int {\bfseries permission}
+\end{DoxyCompactItemize}
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classParser_a98de978c6d394f8abdb64c538975a95f}{\index{Parser@{Parser}!permission@{permission}}
+\index{permission@{permission}!Parser@{Parser}}
+\subsubsection[{permission}]{\setlength{\rightskip}{0pt plus 5cm}const int Parser\-::permission\hspace{0.3cm}{\ttfamily [static]}}}\label{classParser_a98de978c6d394f8abdb64c538975a95f}
+{\bfseries Initial value\-:}
+\begin{DoxyCode}
+=
+            S\_IRUSR | S\_IWUSR | S\_IXUSR | S\_IRGRP | S\_IWGRP | S\_IXGRP | S\_IROTH | S\_IWOTH | S\_IXOTH
+\end{DoxyCode}
+
+
+The documentation for this class was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+parsing.\-h\end{DoxyCompactItemize}

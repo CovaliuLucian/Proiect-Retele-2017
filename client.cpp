@@ -21,11 +21,13 @@
 #include <sstream>
 
 #include "Crypto.h"
+#include <signal.h>
 
 using namespace std;
 
 /* portul de conectare la server*/
 int port;
+
 
 Response readResponse(SSL* ssl) {
     int sizeRes;
@@ -73,6 +75,7 @@ int main(int argc, char *argv[]) {
         SSL_CTX_free(ctx);
         return -2;
     }
+
 
 
     int sd;                    // descriptorul de socket
